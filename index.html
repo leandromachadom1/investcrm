@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InvestCRM</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F7F8FA;--surface:#FFFFFF;--surface2:#F2F4F7;--border:#E4E7EC;--border2:#CBD2E0;
+  --text:#101828;--text2:#475467;--text3:#98A2B3;
+  --accent:#0A5FC4;--accent-light:#EFF6FF;--accent-text:#1D4ED8;
+  --green:#12B76A;--green-bg:#ECFDF3;--green-text:#027A48;
+  --amber:#F79009;--amber-bg:#FFFAEB;--amber-text:#B54708;
+  --red:#F04438;--red-bg:#FEF3F2;--red-text:#B42318;
+  --blue-bg:#EFF8FF;--blue-text:#175CD3;
+  --shadow:0 1px 3px rgba(16,24,40,.08),0 1px 2px rgba(16,24,40,.06);
+  --shadow-md:0 4px 8px rgba(16,24,40,.08),0 2px 4px rgba(16,24,40,.06);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;font-size:14px}
+/* AUTH SCREEN */
+#auth-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:500}
+.auth-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px;width:400px;box-shadow:var(--shadow-md)}
+.auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px;justify-content:center}
+.auth-logo-mark{width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:600}
+.auth-logo-text{font-size:18px;font-weight:600;color:var(--accent)}
+.auth-title{font-size:18px;font-weight:600;margin-bottom:6px;text-align:center}
+.auth-sub{font-size:13px;color:var(--text3);text-align:center;margin-bottom:24px}
+.auth-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px}
+.auth-tab{flex:1;text-align:center;padding:8px;font-size:13px;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;font-weight:500;transition:all .12s}
+.auth-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.fg{margin-bottom:14px}
+.fl{font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500}
+.fc{width:100%;height:36px;padding:0 12px;border:1px solid var(--border2);border-radius:8px;font-size:13px;background:var(--surface);color:var(--text);font-family:'DM Sans',sans-serif;transition:border-color .15s}
+.fc:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(10,95,196,.1)}
+.auth-err{font-size:12px;color:var(--red-text);background:var(--red-bg);border-radius:8px;padding:8px 12px;margin-bottom:12px;display:none}
+/* TOPBAR */
+#topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;box-shadow:var(--shadow)}
+.logo{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:var(--accent);letter-spacing:-.4px;white-space:nowrap}
+.logo-mark{width:30px;height:30px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:600}
+.top-search{flex:1;max-width:340px;position:relative}
+.top-search input{width:100%;height:34px;border:1px solid var(--border);border-radius:8px;padding:0 12px 0 34px;font-size:13px;background:var(--surface2);color:var(--text);font-family:'DM Sans',sans-serif}
+.srch-ico{position:absolute;left:10px;top:9px;color:var(--text3);pointer-events:none}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.user-info{display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:8px;cursor:pointer}
+.user-name{font-size:13px;font-weight:500;color:var(--text2)}
+.user-ava{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
+.logout-btn{height:30px;padding:0 12px;border-radius:8px;border:1px solid var(--border2);font-size:12px;cursor:pointer;background:var(--surface);color:var(--text2);font-family:'DM Sans',sans-serif}
+.logout-btn:hover{background:var(--surface2)}
+/* LAYOUT */
+#shell{display:flex;flex:1;overflow:hidden}
+#nav{width:216px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;padding:8px 0 16px}
+.nav-grp{padding:16px 16px 4px;font-size:10px;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;font-weight:500}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 16px;font-size:13px;cursor:pointer;color:var(--text2);border-left:3px solid transparent;transition:all .12s;margin:1px 0;border-radius:0 6px 6px 0;margin-right:8px}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--accent-light);color:var(--accent-text);border-left-color:var(--accent);font-weight:500}
+.nav-ico{font-size:15px;width:18px;text-align:center}
+.nav-badge{margin-left:auto;background:var(--red-bg);color:var(--red-text);font-size:10px;padding:1px 6px;border-radius:20px;font-weight:500}
+#content{flex:1;overflow-y:auto;padding:24px;background:var(--bg)}
+.pg{display:none}.pg.active{display:block}
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.ph-title{font-size:20px;font-weight:600;letter-spacing:-.3px}
+.ph-sub{font-size:13px;color:var(--text3);margin-top:2px}
+/* BUTTONS */
+.btn{height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--border2);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;background:var(--surface);color:var(--text);transition:all .15s;font-family:'DM Sans',sans-serif;font-weight:500}
+.btn:hover{background:var(--surface2)}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 1px 3px rgba(10,95,196,.3)}
+.btn-primary:hover{background:#0850A8}
+.btn-sm{height:28px;padding:0 10px;font-size:12px}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap}
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.metric-label{font-size:11px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.metric-value{font-size:22px;font-weight:600;letter-spacing:-.5px}
+.metric-sub{font-size:11px;color:var(--text3);margin-top:4px}
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;text-transform:uppercase;letter-spacing:.3px}
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:var(--text3);border-bottom:1px solid var(--border);letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;background:var(--surface2)}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr.row:hover td{background:#FAFBFC;cursor:pointer}
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-green{background:var(--green-bg);color:var(--green-text)}
+.badge-amber{background:var(--amber-bg);color:var(--amber-text)}
+.badge-blue{background:var(--blue-bg);color:var(--blue-text)}
+.badge-red{background:var(--red-bg);color:var(--red-text)}
+.badge-gray{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:18px}
+.tab{padding:8px 18px;font-size:13px;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .12s;font-weight:500}
+.tab:hover{color:var(--text2)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+/* FILTERS */
+.filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.filters input,.filters select{height:32px;padding:0 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--surface);color:var(--text);font-family:'DM Sans',sans-serif}
+.filters input{width:220px}
+/* AVATAR */
+.ava{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+.ava-blue{background:var(--accent-light);color:var(--accent-text)}
+.ava-amber{background:var(--amber-bg);color:var(--amber-text)}
+/* KANBAN */
+.kanban{display:flex;gap:14px;overflow-x:auto;padding-bottom:12px}
+.kcol{flex:0 0 210px;background:var(--surface2);border-radius:12px;padding:12px;border:1px solid var(--border)}
+.kcol-header{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;text-transform:uppercase;letter-spacing:.4px}
+.kcol-count{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:1px 7px;font-size:11px}
+.kcard{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
+.kcard:hover{border-color:var(--accent)}
+.kcard-name{font-size:12px;font-weight:600;margin-bottom:3px}
+.kcard-val{font-size:12px;color:var(--text2)}
+.kcard-foot{font-size:10px;color:var(--text3);margin-top:6px;display:flex;justify-content:space-between}
+.kcol-total{font-size:11px;font-weight:600;color:var(--text2);text-align:right;margin-top:6px;padding-top:8px;border-top:1px solid var(--border)}
+/* ACTIVITY */
+.act-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.act-item:last-child{border-bottom:none}
+.act-icon{width:32px;height:32px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.act-body{flex:1}
+.act-title{font-size:13px;font-weight:500}
+.act-meta{font-size:11px;color:var(--text3);margin-top:2px}
+/* PROFILE */
+.prof-header{display:flex;align-items:center;gap:16px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.prof-ava{width:56px;height:56px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;flex-shrink:0}
+.prof-name{font-size:18px;font-weight:600}
+.prof-sub{font-size:13px;color:var(--text3);margin-top:3px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.detail-field{margin-bottom:12px}
+.detail-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px;font-weight:500}
+.detail-value{font-size:14px}
+.fin-box{background:linear-gradient(135deg,#EFF6FF 0%,#F0FDF4 100%);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:18px}
+.fin-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.fin-item{background:rgba(255,255,255,.8);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.fin-label{font-size:10px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;font-weight:500}
+.fin-value{font-size:14px;font-weight:600}
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(16,24,40,.4);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:520px;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-md)}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{cursor:pointer;color:var(--text3);font-size:20px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.modal-close:hover{background:var(--surface2)}
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500}
+.form-control{width:100%;height:36px;padding:0 12px;border:1px solid var(--border2);border-radius:8px;font-size:13px;background:var(--surface);color:var(--text);font-family:'DM Sans',sans-serif}
+.form-control:focus{outline:none;border-color:var(--accent)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* PROGRESS */
+.prog-bar{height:6px;background:var(--surface2);border-radius:3px;margin-top:5px;overflow:hidden;border:1px solid var(--border)}
+.prog-fill{height:100%;border-radius:3px;background:var(--accent)}
+/* PIPELINE */
+.pipe-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:12px}
+.pipe-label{width:115px;flex-shrink:0;color:var(--text2);font-weight:500}
+.pipe-track{flex:1;height:20px;background:var(--surface2);border-radius:4px;overflow:hidden;border:1px solid var(--border)}
+.pipe-fill{height:100%;border-radius:4px;background:var(--accent);display:flex;align-items:center;padding-left:8px;font-size:10px;color:#fff;font-weight:600;min-width:20px}
+.pipe-amount{width:90px;text-align:right;color:var(--text3);flex-shrink:0}
+.rep-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.drop-zone{border:2px dashed var(--border2);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:all .15s}
+.drop-zone:hover{border-color:var(--accent);background:var(--accent-light)}
+.empty{text-align:center;padding:32px;color:var(--text3);font-size:13px}
+.loading{text-align:center;padding:32px;color:var(--text3);font-size:13px}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+/* TOAST */
+#toast{position:fixed;bottom:24px;right:24px;background:#101828;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-mark">LM</div>
+      <span class="auth-logo-text">InvestCRM</span>
+    </div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchAuthTab('login',this)">Entrar</div>
+      <div class="auth-tab" onclick="switchAuthTab('register',this)">Criar conta</div>
+    </div>
+    <div id="auth-err" class="auth-err"></div>
+    <!-- LOGIN -->
+    <div id="tab-login">
+      <div class="fg"><div class="fl">Email</div><input class="fc" id="l-email" type="email" placeholder="seu@email.com"></div>
+      <div class="fg"><div class="fl">Senha</div><input class="fc" id="l-pass" type="password" placeholder="••••••••"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;height:40px;font-size:14px;margin-top:4px" onclick="doLogin()">Entrar</button>
+    </div>
+    <!-- REGISTER -->
+    <div id="tab-register" style="display:none">
+      <div class="fg"><div class="fl">Nome completo</div><input class="fc" id="r-nome" placeholder="Leandro Machado"></div>
+      <div class="fg"><div class="fl">Email</div><input class="fc" id="r-email" type="email" placeholder="seu@email.com"></div>
+      <div class="fg"><div class="fl">Senha</div><input class="fc" id="r-pass" type="password" placeholder="mínimo 6 caracteres"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;height:40px;font-size:14px;margin-top:4px" onclick="doRegister()">Criar conta</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="topbar" style="display:none">
+  <div class="logo"><div class="logo-mark">IC</div>InvestCRM</div>
+  <div class="top-search">
+    <svg class="srch-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" placeholder="Buscar...">
+  </div>
+  <div class="top-right">
+    <span id="sync-status" style="font-size:11px;color:var(--text3)"></span>
+    <div class="user-info">
+      <span class="user-name" id="top-username"></span>
+      <div class="user-ava" id="top-ava">?</div>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">Sair</button>
+  </div>
+</div>
+
+<div id="shell" style="display:none">
+  <nav id="nav">
+    <div class="nav-grp">Principal</div>
+    <div class="nav-item active" data-pg="dashboard" onclick="go('dashboard',this)"><span class="nav-ico">⊞</span> Dashboard</div>
+    <div class="nav-grp">Gestão</div>
+    <div class="nav-item" data-pg="clientes" onclick="go('clientes',this)"><span class="nav-ico">◎</span> Clientes</div>
+    <div class="nav-item" data-pg="leads" onclick="go('leads',this)"><span class="nav-ico">◈</span> Leads</div>
+    <div class="nav-item" data-pg="pipeline" onclick="go('pipeline',this)"><span class="nav-ico">◧</span> Pipeline</div>
+    <div class="nav-grp">Produtividade</div>
+    <div class="nav-item" data-pg="atividades" onclick="go('atividades',this)"><span class="nav-ico">◷</span> Atividades<span class="nav-badge" id="badge-pend" style="display:none">0</span></div>
+    <div class="nav-grp">Análise</div>
+    <div class="nav-item" data-pg="relatorios" onclick="go('relatorios',this)"><span class="nav-ico">◫</span> Relatórios</div>
+  </nav>
+
+  <div id="content">
+
+    <!-- DASHBOARD -->
+    <div class="pg active" id="pg-dashboard">
+      <div class="ph"><div><div class="ph-title">Dashboard</div><div class="ph-sub" id="dash-date"></div></div></div>
+      <div class="metrics">
+        <div class="metric"><div class="metric-label">Clientes</div><div class="metric-value" id="m-cli">—</div><div class="metric-sub">ativos</div></div>
+        <div class="metric"><div class="metric-label">Leads</div><div class="metric-value" id="m-lds">—</div><div class="metric-sub">em prospecção</div></div>
+        <div class="metric"><div class="metric-label">AUM estimado</div><div class="metric-value" id="m-aum" style="font-size:16px;padding-top:3px">—</div><div class="metric-sub">sob gestão</div></div>
+        <div class="metric"><div class="metric-label">Pipeline</div><div class="metric-value" id="m-pipe" style="font-size:16px;padding-top:3px">—</div><div class="metric-sub">em oportunidades</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="card"><div class="card-title">Pipeline por estágio <button class="btn btn-sm" onclick="go('pipeline',null)">Ver →</button></div><div id="d-pipe"><div class="loading">Carregando...</div></div></div>
+        <div class="card"><div class="card-title">Atividades recentes</div><div id="d-acts"><div class="loading">Carregando...</div></div></div>
+        <div class="card"><div class="card-title">Tarefas pendentes</div><div id="d-tasks"><div class="loading">Carregando...</div></div></div>
+      </div>
+    </div>
+
+    <!-- CLIENTES -->
+    <div class="pg" id="pg-clientes">
+      <div class="ph"><div class="ph-title">Clientes</div><button class="btn btn-primary" onclick="openModal('m-cliente')">+ Novo cliente</button></div>
+      <div class="filters">
+        <input type="text" id="q-cli" placeholder="Buscar nome..." oninput="renderClientes()">
+        <select id="f-seg" onchange="renderClientes()"><option value="">Todos os segmentos</option><option>Private</option><option>Premium</option><option>Varejo</option></select>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden"><table><thead><tr><th>Cliente</th><th>Segmento</th><th>Patrimônio</th><th>Produtos</th><th>Último contato</th><th></th></tr></thead><tbody id="tb-cli"></tbody></table></div>
+    </div>
+
+    <!-- LEADS -->
+    <div class="pg" id="pg-leads">
+      <div class="ph"><div class="ph-title">Leads</div><div class="btn-group"><button class="btn" onclick="openModal('m-import')">↑ Importar CSV</button><button class="btn btn-primary" onclick="openModal('m-lead')">+ Novo lead</button></div></div>
+      <div class="filters">
+        <input type="text" id="q-ld" placeholder="Buscar nome ou empresa..." oninput="renderLeads()">
+        <select id="f-orig" onchange="renderLeads()"><option value="">Todos os segmentos</option><option>Agro</option><option>Advogado</option><option>Comércio</option><option>Construtora/Incorporadora/Imobiliária</option><option>Consultoria</option><option>Contabilidade</option><option>Finanças</option><option>Intermediação</option><option>Marketing</option><option>Médico</option><option>Mineração</option><option>Outros</option><option>Público</option><option>TI</option><option>Transportadora</option></select>
+        <select id="f-stld" onchange="renderLeads()"><option value="">Todos os status</option><option>Novo</option><option>Em contato</option><option>Qualificado</option><option>Proposta</option><option>Descartado</option></select>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden"><table><thead><tr><th>Lead</th><th>Empresa</th><th>Segmento</th><th>Telefone</th><th>Observações</th><th>Último contato</th><th>Próximo contato</th><th></th></tr></thead><tbody id="tb-ld"></tbody></table></div>
+    </div>
+
+    <!-- PIPELINE -->
+    <div class="pg" id="pg-pipeline">
+      <div class="ph"><div class="ph-title">Pipeline</div><button class="btn btn-primary" onclick="openModal('m-opp')">+ Nova oportunidade</button></div>
+      <div class="tabs">
+        <div class="tab active" onclick="switchPipe('kanban',this)">Kanban</div>
+        <div class="tab" onclick="switchPipe('lista',this)">Lista</div>
+        <div class="tab" onclick="switchPipe('grafico',this)">Gráfico</div>
+      </div>
+      <div id="pipe-kanban"></div>
+      <div id="pipe-lista" style="display:none"></div>
+      <div id="pipe-grafico" style="display:none"></div>
+    </div>
+
+    <!-- ATIVIDADES -->
+    <div class="pg" id="pg-atividades">
+      <div class="ph"><div class="ph-title">Atividades</div><button class="btn btn-primary" onclick="openModal('m-task')">+ Registrar</button></div>
+      <div class="tabs">
+        <div class="tab active" onclick="setTabA(this,'todos')">Todas</div>
+        <div class="tab" onclick="setTabA(this,'Reunião')">Reuniões</div>
+        <div class="tab" onclick="setTabA(this,'Ligação')">Ligações</div>
+        <div class="tab" onclick="setTabA(this,'Email')">Emails</div>
+        <div class="tab" onclick="setTabA(this,'WhatsApp')">WhatsApp</div>
+        <div class="tab" onclick="setTabA(this,'Tarefa')">Tarefas</div>
+      </div>
+      <div class="filters">
+        <select id="f-acst" onchange="renderActs()"><option value="">Todos os status</option><option>Pendente</option><option>Realizado</option><option>Cancelado</option></select>
+        <input type="date" id="f-acdt" onchange="renderActs()" style="width:160px">
+        <button class="btn btn-sm" onclick="document.getElementById('f-acdt').value=new Date().toISOString().split('T')[0];renderActs()">Hoje</button>
+        <button class="btn btn-sm" onclick="document.getElementById('f-acdt').value='';renderActs()">Limpar</button>
+      </div>
+      <div class="card" style="padding:12px 18px" id="act-list"></div>
+    </div>
+
+    <!-- RELATÓRIOS -->
+    <div class="pg" id="pg-relatorios">
+      <div class="ph"><div class="ph-title">Relatórios</div></div>
+      <div class="rep-grid">
+        <div class="card"><div class="card-title">Leads por segmento</div><div id="rep-orig"></div></div>
+        <div class="card"><div class="card-title">Funil de conversão</div><div id="rep-funil"></div></div>
+        <div class="card" style="grid-column:span 2"><div class="card-title">Resumo executivo</div><div id="rep-exec"></div></div>
+      </div>
+    </div>
+
+    <!-- PERFIL -->
+    <div class="pg" id="pg-profile">
+      <div class="ph"><button class="btn" onclick="goBack()">← Voltar</button><button class="btn btn-primary" onclick="addActProfile()">+ Atividade</button></div>
+      <div class="card">
+        <div class="prof-header">
+          <div class="prof-ava" id="pr-ava">?</div>
+          <div style="flex:1"><div class="prof-name" id="pr-name">—</div><div class="prof-sub" id="pr-sub">—</div></div>
+          <div id="pr-badges" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+        </div>
+        <div class="fin-box">
+          <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Perfil Financeiro</div>
+          <div class="fin-grid">
+            <div class="fin-item"><div class="fin-label">Patrimônio / Potencial</div><div class="fin-value" id="pr-pat">—</div></div>
+            <div class="fin-item"><div class="fin-label">Segmento</div><div class="fin-value" id="pr-seg">—</div></div>
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:.4px">Produtos / Interesse</div>
+          <div style="font-size:13px" id="pr-prod">—</div>
+        </div>
+        <div class="detail-grid">
+          <div>
+            <div class="detail-field"><div class="detail-label">Email</div><div class="detail-value" id="pr-email">—</div></div>
+            <div class="detail-field"><div class="detail-label">Telefone</div><div class="detail-value" id="pr-phone">—</div></div>
+            <div class="detail-field"><div class="detail-label">Observações</div><div class="detail-value" id="pr-obs">—</div></div>
+          </div>
+          <div><div class="detail-field"><div class="detail-label">Empresa</div><div class="detail-value" id="pr-empresa">—</div></div></div>
+        </div>
+      </div>
+      <div class="card"><div class="card-title">Histórico</div><div id="pr-hist"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="m-cliente" onclick="closeModal(event,'m-cliente')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Novo cliente <span class="modal-close" onclick="closeModal(null,'m-cliente')">×</span></div>
+    <div class="form-row"><div class="form-group"><div class="form-label">Nome *</div><input class="form-control" id="cn" placeholder="João da Silva"></div><div class="form-group"><div class="form-label">Email</div><input class="form-control" id="ce" placeholder="joao@email.com"></div></div>
+    <div class="form-row"><div class="form-group"><div class="form-label">Telefone</div><input class="form-control" id="cp" placeholder="(11) 99999-9999"></div><div class="form-group"><div class="form-label">Segmento</div><select class="form-control" id="cs"><option>Private</option><option>Premium</option><option>Varejo</option></select></div></div>
+    <div class="form-group"><div class="form-label">Patrimônio (R$)</div><input class="form-control" id="cv" type="number" placeholder="500000"></div>
+    <div class="form-group"><div class="form-label">Produtos na carteira</div><input class="form-control" id="cpd" placeholder="CDB, Tesouro, FIIs..."></div>
+    <div class="form-group"><div class="form-label">Observações</div><input class="form-control" id="co" placeholder="Notas..."></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn" onclick="closeModal(null,'m-cliente')">Cancelar</button><button class="btn btn-primary" onclick="saveCli()">Salvar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="m-lead" onclick="closeModal(event,'m-lead')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Novo lead <span class="modal-close" onclick="closeModal(null,'m-lead')">×</span></div>
+    <div class="form-row"><div class="form-group"><div class="form-label">Nome *</div><input class="form-control" id="ln" placeholder="Maria Santos"></div><div class="form-group"><div class="form-label">Empresa</div><input class="form-control" id="le" placeholder="Empresa SA"></div></div>
+    <div class="form-row"><div class="form-group"><div class="form-label">Email</div><input class="form-control" id="lem" placeholder="maria@empresa.com"></div><div class="form-group"><div class="form-label">Telefone</div><input class="form-control" id="lp" placeholder="(11) 98888-0000"></div></div>
+    <div class="form-row"><div class="form-group"><div class="form-label">Segmento</div><input class="form-control" id="lpd" placeholder="Agro, Médico, TI..."></div><div class="form-group"><div class="form-label">Status</div><select class="form-control" id="ls"><option>Novo</option><option>Em contato</option><option>Qualificado</option><option>Proposta</option></select></div></div>
+    <div class="form-group"><div class="form-label">Observações</div><input class="form-control" id="lob" placeholder="Contexto, como conheceu..."></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn" onclick="closeModal(null,'m-lead')">Cancelar</button><button class="btn btn-primary" onclick="saveLead()">Salvar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="m-opp" onclick="closeModal(event,'m-opp')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Nova oportunidade <span class="modal-close" onclick="closeModal(null,'m-opp')">×</span></div>
+    <div class="form-row"><div class="form-group"><div class="form-label">Nome *</div><input class="form-control" id="on2" placeholder="Captação João Silva"></div><div class="form-group"><div class="form-label">Cliente / Lead</div><input class="form-control" id="oc" placeholder="Nome do cliente"></div></div>
+    <div class="form-row"><div class="form-group"><div class="form-label">Valor (R$)</div><input class="form-control" id="ov" type="number" placeholder="500000"></div><div class="form-group"><div class="form-label">Estágio</div><select class="form-control" id="oe"><option>Prospecção</option><option>Qualificação</option><option>Proposta</option><option>Negociação</option><option>Fechamento</option></select></div></div>
+    <div class="form-row"><div class="form-group"><div class="form-label">Produto</div><input class="form-control" id="opd" placeholder="Renda fixa, FIIs..."></div><div class="form-group"><div class="form-label">Previsão</div><input class="form-control" id="od" type="date"></div></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn" onclick="closeModal(null,'m-opp')">Cancelar</button><button class="btn btn-primary" onclick="saveOpp()">Salvar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="m-task" onclick="closeModal(event,'m-task')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Registrar atividade <span class="modal-close" onclick="closeModal(null,'m-task')">×</span></div>
+    <div class="form-row"><div class="form-group"><div class="form-label">Tipo</div><select class="form-control" id="tt"><option>Reunião</option><option>Ligação</option><option>Email</option><option>WhatsApp</option><option>Tarefa</option></select></div><div class="form-group"><div class="form-label">Cliente / Lead</div><input class="form-control" id="tc" placeholder="Nome..."></div></div>
+    <div class="form-group"><div class="form-label">Descrição *</div><input class="form-control" id="td" placeholder="Detalhe da atividade..."></div>
+    <div class="form-row"><div class="form-group"><div class="form-label">Data</div><input class="form-control" id="tdt" type="date"></div><div class="form-group"><div class="form-label">Status</div><select class="form-control" id="tst"><option>Pendente</option><option>Realizado</option><option>Cancelado</option></select></div></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn" onclick="closeModal(null,'m-task')">Cancelar</button><button class="btn btn-primary" onclick="saveTask()">Salvar</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="m-import" onclick="closeModal(event,'m-import')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Importar CSV <span class="modal-close" onclick="closeModal(null,'m-import')">×</span></div>
+    <div style="background:var(--surface2);border-radius:8px;padding:8px 14px;font-size:12px;font-family:'DM Mono',monospace;color:var(--text3);margin-bottom:16px;border:1px solid var(--border)">nome, email, telefone, empresa, origem, status, potencial, produtos, observacoes</div>
+    <div class="drop-zone" onclick="document.getElementById('csv-inp').click()"><div style="font-size:28px;margin-bottom:8px">☁</div><div style="font-size:14px;font-weight:600">Clique para selecionar CSV</div></div>
+    <input type="file" id="csv-inp" accept=".csv" style="display:none" onchange="importCSV(event)">
+    <div id="import-fb" style="margin-top:12px"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn" onclick="closeModal(null,'m-import')">Fechar</button></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ---- SUPABASE INIT ----
+const { createClient } = supabase;
+const sb = createClient('https://lthebgyxhlnbistyzkco.supabase.co', 'sb_publishable_v1vFfjTpRzDLnEfR-Hk4iQ_DshUzlN2');
+
+// ---- STATE ----
+var DB = {clientes:[],leads:[],opps:[],tasks:[]};
+var CF = {acts:'todos'};
+var prevPg='dashboard', curPg='dashboard';
+var profData=null, pipeView='kanban';
+var currentUser=null;
+
+// ---- SEED DATA (carregado apenas no primeiro login) ----
+var SEED_CLIENTES, SEED_LEADS, SEED_TASKS;
+DB.clientes = [
+    {id:1,nome:'Rita de Cassia Fossati Silveira Evaldt',email:'',phone:'',seg:'Private',pat:668571.67,prod:'',obs:'',date:'2026-03-03'},
+    {id:2,nome:'Israel Henrique Lima Martins',email:'',phone:'',seg:'Premium',pat:295585.00,prod:'',obs:'',date:'2026-03-03'},
+    {id:3,nome:'Kenedy Wallafy Souza de Oliveira',email:'',phone:'',seg:'Premium',pat:181665.50,prod:'',obs:'',date:'2026-03-03'},
+    {id:4,nome:'Leandro Ferreira da Silva Machado',email:'',phone:'',seg:'Premium',pat:179232.09,prod:'',obs:'',date:'2026-03-03'},
+    {id:5,nome:'Leticia Ferreira da Silva Machado',email:'',phone:'',seg:'Premium',pat:100000.00,prod:'',obs:'',date:'2026-03-04'},
+    {id:6,nome:'Maria de Fatima Panzera Carvalho',email:'',phone:'',seg:'Varejo',pat:76066.21,prod:'',obs:'',date:'2026-03-04'},
+    {id:7,nome:'Jose Domingos Carvalho Filho',email:'',phone:'',seg:'Varejo',pat:60849.76,prod:'',obs:'',date:'2026-03-04'},
+    {id:8,nome:'Joao Victor Ferreira Cunha',email:'',phone:'',seg:'Varejo',pat:27684.15,prod:'',obs:'',date:'2026-03-04'},
+    {id:9,nome:'Felipe Fernandes Martins da Silveira',email:'',phone:'',seg:'Varejo',pat:26070.31,prod:'',obs:'',date:'2026-03-05'},
+    {id:10,nome:'Kaio Muniz dos Santos',email:'',phone:'',seg:'Varejo',pat:21698.86,prod:'',obs:'',date:'2026-03-05'},
+    {id:11,nome:'Lucas Maciel Dutra',email:'',phone:'',seg:'Varejo',pat:18274.20,prod:'',obs:'',date:'2026-03-05'},
+    {id:12,nome:'Rodrigo Thomaz Ferreira Santos',email:'',phone:'',seg:'Varejo',pat:11660.02,prod:'',obs:'',date:'2026-03-06'},
+    {id:13,nome:'Gabriela Ferreira Vargas Cortez',email:'',phone:'',seg:'Varejo',pat:5110.27,prod:'',obs:'',date:'2026-03-06'},
+    {id:14,nome:'Joao Vitor Frutuoso Martins',email:'',phone:'',seg:'Varejo',pat:87.89,prod:'',obs:'',date:'2026-03-06'},
+    {id:15,nome:'Fosfor Importacao Exportacao e Gestao LTDA',email:'',phone:'',seg:'Varejo',pat:0.95,prod:'',obs:'',date:'2026-03-09'},
+    {id:16,nome:'Amanda Schlottfeldt de Oliveira',email:'',phone:'',seg:'Varejo',pat:0,prod:'',obs:'',date:'2026-03-09'},
+    {id:17,nome:'Davy Moreira Santos',email:'',phone:'',seg:'Varejo',pat:0,prod:'',obs:'',date:'2026-03-09'},
+    {id:18,nome:'Euro Solucoes Tecnologicas LTDA',email:'',phone:'',seg:'Varejo',pat:0,prod:'',obs:'',date:'2026-03-10'},
+    {id:19,nome:'Fyr Servicos de Cobranca LTDA',email:'',phone:'',seg:'Varejo',pat:0,prod:'',obs:'',date:'2026-03-10'},
+    {id:20,nome:'Ingo Camara Althoff',email:'',phone:'',seg:'Varejo',pat:0,prod:'',obs:'',date:'2026-03-10'},
+    {id:21,nome:'Leonardo de Bortoli',email:'',phone:'',seg:'Varejo',pat:0,prod:'',obs:'',date:'2026-03-10'},
+    {id:22,nome:'Ludwig Bezerra Sales',email:'',phone:'',seg:'Varejo',pat:0,prod:'',obs:'',date:'2026-03-11'},
+    {id:23,nome:'Luis Felipe Puhlmann da Luz',email:'',phone:'',seg:'Varejo',pat:0,prod:'',obs:'',date:'2026-03-11'},
+    {id:24,nome:'Pablo Teles Marques Ribeiro',email:'',phone:'',seg:'Varejo',pat:0,prod:'',obs:'',date:'2026-03-11'},
+    {id:25,nome:'R828 LTDA',email:'',phone:'',seg:'Varejo',pat:0,prod:'',obs:'',date:'2026-03-12'},
+    {id:26,nome:'Richard Guilherme Aparecido Ferreira da Silva',email:'',phone:'',seg:'Varejo',pat:0,prod:'',obs:'',date:'2026-03-12'},
+    {id:27,nome:'Ronaldo Paiva Costa',email:'',phone:'',seg:'Varejo',pat:0,prod:'',obs:'',date:'2026-03-12'},
+    {id:28,nome:'Teresinha Loureiro Gontijo',email:'',phone:'',seg:'Varejo',pat:0,prod:'',obs:'',date:'2026-03-13'},
+    {id:29,nome:'Thiago de Oliveira Lacerda',email:'',phone:'',seg:'Varejo',pat:0,prod:'',obs:'',date:'2026-03-13'},
+    {id:30,nome:'Valeria Valadares Ribeiro',email:'',phone:'',seg:'Varejo',pat:0,prod:'',obs:'',date:'2026-03-13'},
+    {id:31,nome:'Vitor Valadares Ribeiro',email:'',phone:'',seg:'Varejo',pat:0,prod:'',obs:'',date:'2026-03-14'},
+  ];
+SEED_CLIENTES = DB.clientes; DB.clientes=[];
+DB.leads = [
+    {id:101,nome:'MARCO AURELIO PERICO',email:'',phone:'(51)999678786',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'Marcar reunião',empresa:'Engesul (sudden)',date:'2026-03-17',proximo:'2026-04-14'},
+    {id:102,nome:'Dieik (João Minsian)',email:'',phone:'48 9945-0459',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'Comex',date:'2026-03-17',proximo:'2026-04-14'},
+    {id:103,nome:'JOAO ALBERTO FRIESTINO',email:'',phone:'(19)981158282',orig:'Importação',status:'Novo',pot:0,prod:'Mineração',obs:'Aposetnado Manesman(valourec). Morou em BH 19 anos. Tem dinheiro no VGBL. Estava em Bertioga. 2,5M na XP, Tem $ no Bradesco e 180 mil no BB',empresa:'Aposentado',date:'2026-03-17',proximo:'2026-04-14'},
+    {id:104,nome:'ANTONIO CARLOS VARGAS FILHO',email:'',phone:'(24)999625262',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Pediu para agendar reunião no wp',empresa:'',date:'2026-03-17',proximo:'2026-04-14'},
+    {id:105,nome:'Natan',email:'',phone:'21 99976-1459',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'',empresa:'Cartão (CS)',date:'2026-03-17',proximo:'2026-04-14'},
+    {id:106,nome:'Mario Campos',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Coopel',date:'2026-03-17',proximo:'2026-04-14'},
+    {id:107,nome:'Lucas Sousa',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Agro',date:'2026-03-17',proximo:'2026-04-14'},
+    {id:108,nome:'Allan Ramires',email:'',phone:'Dourados',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Mundo Irrigação',date:'2026-03-17',proximo:'2026-04-14'},
+    {id:109,nome:'Bortoluzzi',email:'',phone:'Xanxerê',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Pedir indicação Alex AONexus',date:'2026-03-17',proximo:'2026-04-14'},
+    {id:110,nome:'Valdir',email:'',phone:'Blumenau',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'Agendado 11/12',empresa:'W8 Textil (Sudden)',date:'2026-03-17',proximo:'2026-04-14'},
+    {id:111,nome:'Emerson Faria',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'LJ',date:'2026-03-17',proximo:'2026-04-14'},
+    {id:112,nome:'Marcelo Soares',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'',empresa:'Médico',date:'2026-03-17',proximo:'2026-04-14'},
+    {id:113,nome:'Thalles Santos',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'Pelkin',date:'2026-03-17',proximo:'2026-04-14'},
+    {id:114,nome:'Kleber Alves',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Público',obs:'',empresa:'Juiz',date:'2026-03-17',proximo:'2026-04-14'},
+    {id:115,nome:'José Jair',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Consultoria',obs:'',empresa:'Micapel',date:'2026-03-17',proximo:'2026-04-14'},
+    {id:116,nome:'Gustavo Carvalho rink',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Finanças',obs:'',empresa:'NS',date:'2026-03-17',proximo:'2026-04-14'},
+    {id:117,nome:'Luis Fabio Martins',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Construção',date:'2026-03-17',proximo:'2026-04-14'},
+    {id:118,nome:'Fernando Bitencourt',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'',empresa:'NS',date:'2026-02-12',proximo:'2026-03-12'},
+    {id:119,nome:'Luiz Martins',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'NS',date:'2026-02-12',proximo:'2026-03-12'},
+    {id:120,nome:'Lucas Kerber',email:'',phone:'47 9147-6844',orig:'Importação',status:'Novo',pot:0,prod:'Marketing',obs:'',empresa:'Harcos MKT',date:'2026-02-13',proximo:'2026-03-13'},
+    {id:121,nome:'Tiago Larsen Rocha',email:'',phone:'47 8825-3119',orig:'Importação',status:'Novo',pot:0,prod:'Marketing',obs:'',empresa:'Libran Studio',date:'2026-02-19',proximo:'2026-03-19'},
+    {id:122,nome:'Rodrigo R',email:'',phone:'47 9206-2877',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'B&B Comex',date:'2026-02-19',proximo:'2026-03-19'},
+    {id:123,nome:'Gustavo Farnezi',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Corretor',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:124,nome:'Wagner Camacho',email:'',phone:'21',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'Já tem atendimento, chamar depois',empresa:'Pisos (CS)',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:125,nome:'Felipe Valadares (Galba)',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Sicoob',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:126,nome:'Luis Fernando Oliveira',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'',empresa:'Agtech',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:127,nome:'Juscelino Reis',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'CRP',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:128,nome:'Leonardo Costa',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Tratorpeu',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:129,nome:'Nicholas Meira',email:'',phone:'41 9946-4001',orig:'Importação',status:'Novo',pot:0,prod:'Contabilidade',obs:'Tributário',empresa:'Power Tax Brasil (CS)',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:130,nome:'Isaias Fortkamp',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'',empresa:'Médico (Sudden)',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:131,nome:'Renato Pezinho',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Construção',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:132,nome:'Rafael Santos Barboza AAI',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'Finanças',obs:'',empresa:'AAI',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:133,nome:'Bruno Pimenta',email:'',phone:'PR',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'',empresa:'Médico',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:134,nome:'Pedro Santos',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'',empresa:'TI',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:135,nome:'Jhonnata Machado',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Construção',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:136,nome:'José Mendes',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Construtora',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:137,nome:'Said',email:'',phone:'Viçosa',orig:'Importação',status:'Novo',pot:0,prod:'Finanças',obs:'',empresa:'Economista',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:138,nome:'Marcelo Gonçalves',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'',empresa:'Médico',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:139,nome:'Alessandra Duarte',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'Kibocada',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:140,nome:'Antonio Candido',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Construção',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:141,nome:'Flavius Fabretti',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Corretor',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:142,nome:'Bernardo Serra',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'NS',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:143,nome:'Rodrigo Bataglin',email:'',phone:'47 9128-1047',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'Busca 5.5M de crédito. Termina obra em Piçarras em junho e inicia outra em jun/26 em Bombinhas. Usa recurso próprio e do banco. usa plano empresário e apoio a produção. VGV médio de 12M. Conhece EQI, usa Sicred',empresa:'Bataglin Capital (Lucas Harcos)',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:144,nome:'Charlis Haubert',email:'',phone:'48 8403-1486',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'Haubert Incorporações. Já tem grupo fechado de investidores. Obra em Ingleses, 2 geração da empresa, lança empreendimento final de 2026. Faz compra de terrenos. Não trabalha com bancos, só com investidores',empresa:'Construtora (Lucas Harcos)',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:145,nome:'Marcio Codebras',email:'',phone:'31 9918-6464',orig:'Importação',status:'Novo',pot:0,prod:'Transportadora',obs:'BNDES Frotas. Primo é despachante aduaneiro no RJ. Pedir indicação',empresa:'Transportadora (Tio Gustavo Euro)',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:146,nome:'Luiz Claudio Santos',email:'',phone:'11 95051-5828',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'',empresa:'Advogado Imobiliário rural SP e PR (Maringá)(CS)',date:'2026-02-20',proximo:'2026-03-20'},
+    {id:147,nome:'Omar L Kfouri',email:'',phone:'11',orig:'Importação',status:'Novo',pot:0,prod:'Contabilidade',obs:'',empresa:'Numerya BPO',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:148,nome:'Danilo Casagrande',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'Consultoria',obs:'Sócio e Financeiro',empresa:'Tático',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:149,nome:'Matheus Bueno',email:'',phone:'41 9896-7297',orig:'Importação',status:'Novo',pot:0,prod:'Marketing',obs:'Falamos sobre crédito',empresa:'Performance Máxima',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:150,nome:'Aaron Arruda',email:'',phone:'Ponta Grossa',orig:'Importação',status:'Novo',pot:0,prod:'Banco',obs:'Falamos sobre crédito',empresa:'Unicred',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:151,nome:'Caio Malacco',email:'',phone:'Goiania',orig:'Importação',status:'Novo',pot:0,prod:'Finanças',obs:'Falamos sobre crédito',empresa:'MFO Aliá',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:152,nome:'Rodolfo Presotto',email:'',phone:'MT',orig:'Importação',status:'Novo',pot:0,prod:'Consultoria',obs:'',empresa:'',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:153,nome:'Andre Hummel',email:'',phone:'41 8805-8779',orig:'Importação',status:'Novo',pot:0,prod:'Consultoria',obs:'Falamos sobre crédito',empresa:'Perícia Financeira - Consultoria Técnica - Administração Judicial - www.andrehummel.com.br',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:154,nome:'Francisco Nunes',email:'',phone:'61 8177-9381',orig:'Importação',status:'Novo',pot:0,prod:'Banco',obs:'Falamos sobre crédito',empresa:'Meo Bank',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:155,nome:'NEIVA RENCK MACIEL',email:'',phone:'79',orig:'Importação',status:'Novo',pot:0,prod:'Público',obs:'Reuniãi quinta',empresa:'(sudden)',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:156,nome:'Luciano (MARIA ELIZABETH FONTOURA FROTA DECOURT)',email:'',phone:'São Paulo',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'Carteira de açoes, retornar contato. 60 anos de bolsa, petrobras é a preferida, 3 filhos 1 é professor de finanças, fez doação em vida, associação br de mecânica de solos, projetos no nordeste, esteve em SC no senna tower a convite, evento do BTG, marcar visita',empresa:'Engenheiro (Sudden)',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:157,nome:'IVOMAR GOMES DUARTE',email:'',phone:'São Paulo',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'Previdência da Icatu',empresa:'Médico (Sudden)',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:158,nome:'Thiago Vicoso dos Santos',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'',empresa:'Médico (Sudden)',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:159,nome:'Hamilton Roberto Carriço de Oliveira',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'',empresa:'Adv (Sudden)',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:160,nome:'Marcelo Gasparino da Silva',email:'',phone:'48 9962-0015',orig:'Importação',status:'Novo',pot:0,prod:'Mineração',obs:'Negócios em siderurgia e mineração',empresa:'Vale (Sudden)',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:161,nome:'Gustavo Bachtold',email:'',phone:'(48)96162094',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'Evento Seguro é de Floripa',empresa:'Médico (Sudden)',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:162,nome:'Marcelo Leandro de Souza',email:'',phone:'Atibaia',orig:'Importação',status:'Novo',pot:0,prod:'Finanças',obs:'Exportação de pimenta rosa',empresa:'Funchal Factoring (Sudden)',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:163,nome:'Alexandre Jacques',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Ligar quinta 13/11',empresa:'BMP Produções (Sudden)',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:164,nome:'Brenno Penha',email:'',phone:'São Luis',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'NS',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:165,nome:'Gabriela Sá',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'',empresa:'Nutri',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:166,nome:'Adriana Fortes Deo',email:'',phone:'14 99741-1528',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'',empresa:'Crédito tributário',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:167,nome:'Sales Audith Dsh',email:'',phone:'98 9125-8268',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'',empresa:'Crédito tributário',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:168,nome:'Soraia',email:'',phone:'21 98132-8088',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'',empresa:'Crédito tributário',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:169,nome:'Nagib Araujo Neto',email:'',phone:'27 99580-6446',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Crédito tributário',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:170,nome:'Leonardo Azevedo',email:'',phone:'31 8515-0758',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'',empresa:'Crédito tributário',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:171,nome:'Luciana Pires',email:'',phone:'71 9216-2124',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'',empresa:'Crédito tributário',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:172,nome:'Felipe Drumond',email:'',phone:'',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'',empresa:'Crédito tributário',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:173,nome:'David Costa',email:'',phone:'',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'Visa',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:174,nome:'Beto Bastos',email:'',phone:'48 8829-8800',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'Boston Café',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:175,nome:'Ronaldo de Arrazão BNU',email:'',phone:'47 9246-8383',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'Beautiful Brasil',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:176,nome:'Daniel Scott',email:'',phone:'41 8722-8140',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'CS',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:177,nome:'Sil Ativos Financeiros',email:'',phone:'',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'Crédito tributário',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:178,nome:'Pedro Henrique Haenisch Ern',email:'',phone:'47 8872-7651',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'Crédito tributário',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:179,nome:'Melissa Carvalho',email:'',phone:'Advogada',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'Crédito tributário',date:'2026-02-23',proximo:'2026-03-23'},
+    {id:180,nome:'Thais (amiga Letícia)',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Público',obs:'',empresa:'NS',date:'2026-02-24',proximo:'2026-03-24'},
+    {id:181,nome:'João Victor Zilli',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'2B',date:'2026-02-24',proximo:'2026-03-24'},
+    {id:182,nome:'Andre VS LOG',email:'',phone:'Presidente Prudente',orig:'Importação',status:'Novo',pot:0,prod:'Transportadora',obs:'',empresa:'VS Log',date:'2026-02-24',proximo:'2026-03-24'},
+    {id:183,nome:'Sergio Dualibe VS LOG',email:'',phone:'18 98112-4444',orig:'Importação',status:'Novo',pot:0,prod:'Transportadora',obs:'',empresa:'VS Log',date:'2026-02-24',proximo:'2026-03-24'},
+    {id:184,nome:'Dazio Cunha',email:'',phone:'21 96470-4452',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'CS',date:'2026-02-24',proximo:'2026-03-24'},
+    {id:185,nome:'Alexandre',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'',empresa:'Audacis',date:'2026-02-24',proximo:'2026-03-24'},
+    {id:186,nome:'Rafael Costa',email:'',phone:'Tapera (Passo Fundo)',orig:'Importação',status:'Novo',pot:0,prod:'Consultoria',obs:'',empresa:'Wanderlust Treinamentos',date:'2026-02-24',proximo:'2026-03-24'},
+    {id:187,nome:'João Freitas',email:'',phone:'51 8063-6613',orig:'Importação',status:'Novo',pot:0,prod:'Banco',obs:'',empresa:'CS (quer consórcio)',date:'2026-02-24',proximo:'2026-03-24'},
+    {id:188,nome:'Daltro Soldateli',email:'',phone:'48 9644-1375',orig:'Importação',status:'Novo',pot:0,prod:'Público',obs:'Engenheiro agronomo aposentado; preocupado com imposto, direcionando tudo para prev, cancer, filhos tem patrimonio. reclamou da XP, mudança de assessoria e empresas',empresa:'(Sudden)',date:'2026-02-24',proximo:'2026-03-24'},
+    {id:189,nome:'Eduardo Koerich',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'Entrar em contato depois. Deu atenção. Retornar contato em breve. Tem family office, irmão cuida do financeiro da empresa, trabalham com Bradesco',empresa:'Koerich (Sudden)',date:'2026-02-24',proximo:'2026-03-24'},
+    {id:190,nome:'Bruno Oliveira',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Mineração',obs:'',empresa:'Engenheiro',date:'2026-02-24',proximo:'2026-03-24'},
+    {id:191,nome:'Jamir Machado',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Contabilidade',obs:'',empresa:'Contabilidade',date:'2026-02-24',proximo:'2026-03-24'},
+    {id:192,nome:'Josilande De Medeiros Gomes',email:'',phone:'48 9983-2464',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Retornar contato',empresa:'(Sudden)',date:'2026-02-24',proximo:'2026-03-24'},
+    {id:193,nome:'Andrezza Rodrigues',email:'',phone:'92 8195-8899',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'Debentures BTG',empresa:'Médico (Sudden)',date:'2026-02-24',proximo:'2026-03-24'},
+    {id:194,nome:'LUCIANA STERZO',email:'',phone:'11 95302-1888',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'Pediu para ligar depois de meia hora, medo de assalto',empresa:'Advogada (Sudden)',date:'2026-02-24',proximo:'2026-03-24'},
+    {id:195,nome:'ADRIANA PEREIRA BORRAJO',email:'',phone:'Rio de Janeiro',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Teve interesse no cartão BTG',empresa:'(Sudden)',date:'2026-02-24',proximo:'2026-03-24'},
+    {id:196,nome:'HENRIQUE SERGIO OAKIM JAIMOVICH',email:'',phone:'Rio de Janeiro',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Pediu para enviar msg pro sócio Fabio 21 98032-0186',empresa:'Plantel (Sudden)',date:'2026-02-24',proximo:'2026-03-24'},
+    {id:197,nome:'MANOEL CARLOS GONCALVES NETO',email:'',phone:'15 99766-1922',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Ligar 26/11 meio dia',empresa:'Veterinário (Sudden)',date:'2026-02-24',proximo:'2026-03-24'},
+    {id:198,nome:'FABIANO MARQUES BORDALLO',email:'',phone:'48 9124-8672',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'Fecha cambio no Bradesco 2% de spread',empresa:'TI (Sudden)',date:'2026-02-24',proximo:'2026-03-24'},
+    {id:199,nome:'CELSO CEOLIN',email:'',phone:'55',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'Dr Celso Trabalhando e investindo na empresa. Enviei material PJ',empresa:'Oftalmo (Sudden)',date:'2026-02-24',proximo:'2026-03-24'},
+    {id:200,nome:'THIERRY DE ROGATIS LEBOIS',email:'',phone:'11',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Pediu para enviar msg',empresa:'(Sudden)',date:'2026-03-02',proximo:'2026-03-30'},
+    {id:201,nome:'ANDERSON TEIVE E ARGOLLO DULTRA',email:'',phone:'75 9969-2468',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'Já tem conta BTG. Mensagem enviada',empresa:'Médico (Sudden)',date:'2026-03-02',proximo:'2026-03-30'},
+    {id:202,nome:'Fabio Plantel',email:'',phone:'21 98032-0186',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Socio Henrique',empresa:'Plantel (Sudden)',date:'2026-03-02',proximo:'2026-03-30'},
+    {id:203,nome:'LUIS CARLOS STUDZINSKI',email:'',phone:'49',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Retornar em dezembro',empresa:'Unna Lab Distribuidora (Sudden)',date:'2026-03-02',proximo:'2025-12-15'},
+    {id:204,nome:'EUCINA DO ESPIRITO SANTO RIBEIRO',email:'',phone:'11 97371-4677',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Pediu para ligar amanhã',empresa:'Sítio (Sudden)',date:'2026-03-02',proximo:'2026-03-30'},
+    {id:205,nome:'ADRIANO MARTINS VILAS BOAS',email:'',phone:'11',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Retornar contato',empresa:'Engenheiro (Sudden)',date:'2026-03-02',proximo:'2026-03-30'},
+    {id:206,nome:'JOSE DE GODOY PEREIRA NETO',email:'',phone:'11 99777-3710',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Retornar em 2026',empresa:'(sudden)',date:'2026-03-02',proximo:'2026-03-30'},
+    {id:207,nome:'Jose Augusto Rosa (Guto)',email:'',phone:'11',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'(11) 99757-8713',empresa:'(sudden)',date:'2026-03-02',proximo:'2026-03-30'},
+    {id:208,nome:'JOSE LUIZ SBRUNHERA',email:'',phone:'15 99775-8720',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Retornar em janeiro',empresa:'(sudden)',date:'2026-03-02',proximo:'2026-03-30'},
+    {id:209,nome:'JHONATHAN FELIPE DIAS',email:'',phone:'65 9946-7941',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Retornar em janeiro',empresa:'(sudden) FP&A',date:'2026-03-02',proximo:'2026-03-30'},
+    {id:210,nome:'JVI - PARTICIPACOES SOCIETARIAS LTDA.',email:'',phone:'41',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Ligar na próxima semana Não apareceu na reunião, disse que não tem interesse',empresa:'(sudden)',date:'2026-03-02',proximo:'2026-03-30'},
+    {id:211,nome:'Reginaldo Ferreira (Novo)',email:'',phone:'38 8426-5403',orig:'Importação',status:'Novo',pot:0,prod:'Público',obs:'',empresa:'Secretário MG NOVO (Kenedy)',date:'2026-03-02',proximo:'2026-03-30'},
+    {id:212,nome:'Daniel Funchal',email:'',phone:'Daniel Funchal',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'Mora em São José, consultor de construtores',empresa:'Construção (CS)',date:'2026-03-02',proximo:'2026-03-30'},
+    {id:213,nome:'Artur',email:'',phone:'48 9608-7446',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'Mora em BC, tem obra no cacupé, construção de casas e adm de obras, incorporação em tubarão com 20 unidades, buscam crédito de 3,5M, tem proposta no Bradesco de financiamento compra entre os sócios, taxa de 12%, faturamento de 1,1M em 2025, tem investimentos PF no C6 (Tesouro). Perguntou de consórcio',empresa:'Mosart Construções (CS)',date:'2026-03-02',proximo:'2026-03-30'},
+    {id:214,nome:'Eduardo',email:'',phone:'11 99927-4803',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'Falar depois da viagem',empresa:'Tudoaqui Comércio (CS)',date:'2026-03-02',proximo:'2026-03-30'},
+    {id:215,nome:'Eloisio',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'Ligação e apresentação BTG',empresa:'Autônomo',date:'2026-03-02',proximo:'2026-03-30'},
+    {id:216,nome:'Jair Binnotti',email:'',phone:'Lucas do Rio Verde',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'Crédito',empresa:'KSB',date:'2026-03-02',proximo:'2026-03-30'},
+    {id:217,nome:'Estenio Carvalho',email:'',phone:'Lucas do Rio Verde',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'Parceria',empresa:'ACEMAT',date:'2026-03-02',proximo:'2026-03-30'},
+    {id:218,nome:'Carlos Eloi',email:'',phone:'Abaeté',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'27/100/25 Reunião comercialização. Eider gestor da fábrica. Carlos diretor comercial. Fábrica de rações e suplementos. Já fizeram operações de trava, frame (FOB) com itaú. Tem consultoria do safras e mercado. Estão contratando responsável pelas compras. Criar grupo no WP',empresa:'Cooperabaete',date:'2026-03-02',proximo:'2026-03-30'},
+    {id:219,nome:'Lucas Junqueira',email:'',phone:'Cuiabá',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'FUP',empresa:'Produtor',date:'2026-03-02',proximo:'2026-03-30'},
+    {id:220,nome:'Marcos Farias',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'Reunião e cadastro',empresa:'Clínica Odonto',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:221,nome:'Brian',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'Sem interesse',empresa:'Expressio',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:222,nome:'Wellinton',email:'',phone:'Imbituba',orig:'Importação',status:'Novo',pot:0,prod:'Público',obs:'FUP',empresa:'Camara dos verados',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:223,nome:'Carlos Oliveira',email:'',phone:'Balneario Camboriu',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'Cadastro',empresa:'Wolf',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:224,nome:'Ismael',email:'',phone:'Passo Fundo',orig:'Importação',status:'Novo',pot:0,prod:'Mineração',obs:'Não respondeu',empresa:'ibmminerals',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:225,nome:'Renan',email:'',phone:'São Paulo',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'Comunidade CS',empresa:'Igreen CS',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:226,nome:'Cristiano',email:'',phone:'Valinhos',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'CS',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:227,nome:'Richard',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Banco',obs:'Reunião feita. Tem FIDIC. Material sudden enviado',empresa:'Fictor',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:228,nome:'Astor',email:'',phone:'Passo Fundo',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'não respondeu',empresa:'Tritec',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:229,nome:'Alaor',email:'',phone:'Passo Fundo',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'não respondeu',empresa:'Dona Helena',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:230,nome:'Lucas Pagnussat',email:'',phone:'Passo Fundo',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'não respondeu',empresa:'CEPAL',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:231,nome:'Eider Portes',email:'',phone:'Abaeté',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'reunião feita',empresa:'Cooperabaete',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:232,nome:'Clóvis Cenedese',email:'',phone:'Sinop',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'Cotar crédito de 5M para milho safrinha. Tem CPR. Está em RJ desde 2020. Gira crédito.',empresa:'Produtor',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:233,nome:'Gustavo Cooperabaete',email:'',phone:'Abaeté',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'Comprador Cooperabaete',empresa:'Comprador Cooperabaete',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:234,nome:'Frederico Amaral (Novo)',email:'',phone:'',orig:'Importação',status:'Novo',pot:0,prod:'Público',obs:'',empresa:'Secretário MG NOVO (Kenedy)',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:235,nome:'MARIANELA ALINA BRENA FORTUNATO',email:'',phone:'Varginha',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'Tem conta na Unicred médicos (BTG). Filha formou, falar na próxima semana. Teve interesse em proteção patrimonial e opções de renda fixa para o cenário atual',empresa:'Médica (sudden)',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:236,nome:'André Paiva',email:'',phone:'Pará de Minas',orig:'Importação',status:'Novo',pot:0,prod:'Mineração',obs:'Ligação e apresentação BTG. TR Terminal receipt 3% de juros por 30 dias. Crédit BNDES. 70% exportações são pros EUA. Não tomam crédito. Fez cotação com BTG BH. 95% movimentação e caixa com Itaú. Family office, acordo de acionistas até 2027, profissionalização.',empresa:'Alterosa',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:237,nome:'Ezio',email:'',phone:'São Paulo',orig:'Importação',status:'Novo',pot:0,prod:'Marketing',obs:'reunião',empresa:'Agência',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:238,nome:'Sergio Borghesi',email:'',phone:'Itapema',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'loteamento agua condominio santa rita rancho queimado 60 lotes problema ambiental',empresa:'Imobiliária (Sudden)',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:239,nome:'LUCAS ANDRE GAVA SANTIAGO',email:'',phone:'11 99203-5120',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Ligar 13h',empresa:'Engenheiro (Sudden)',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:240,nome:'Roberto Machado',email:'',phone:'47 9103-9991',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'CS',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:241,nome:'Israel Martins',email:'',phone:'11 99648-8649',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'',empresa:'CS',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:242,nome:'Leandro Heuser',email:'',phone:'47 8466-5544',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'CS',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:243,nome:'Vinícius',email:'',phone:'15 99784-8059',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'PV Vidros CS',date:'2026-03-03',proximo:'2026-03-31'},
+    {id:244,nome:'MS RESTAURANTES LTDA',email:'',phone:'12 99240-8786',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'Reunião feita, pedir docs',empresa:'PJ (sudden)',date:'2026-03-04',proximo:'2026-04-01'},
+    {id:245,nome:'CINTIA CIARROCCHI VENDEMIATTI',email:'',phone:'19 98120-6000',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Já tem atendimento no banco que cuida das contas da família',empresa:'(sudden)',date:'2026-03-04',proximo:'2026-04-01'},
+    {id:246,nome:'ALBERTO LEONARDO SUBY',email:'',phone:'19 99154-0715',orig:'Importação',status:'Novo',pot:0,prod:'Consultoria',obs:'Já tem BTG. Tem empresa de consultoria',empresa:'Consultoria (sudden)',date:'2026-03-04',proximo:'2026-04-01'},
+    {id:247,nome:'VINICIUS ALVES FUKUSHIRO',email:'',phone:'11 99907-0859',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Falar ano que vem',empresa:'(sudden)',date:'2026-03-04',proximo:'2026-04-01'},
+    {id:248,nome:'Alexandre Pires',email:'',phone:'Santos',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'Aduaneiro, despachante. Volume de 1 conteiner 26-27 toneladas. João Paulo chinês brasileiro que tem os contatos. Pegar informações para cotar',empresa:'BR Trade',date:'2026-03-04',proximo:'2026-04-01'},
+    {id:249,nome:'Vivian ADV',email:'',phone:'Passo Fundo',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'Levantar oportunidade de holding',empresa:'Adv sucessão',date:'2026-03-04',proximo:'2026-04-01'},
+    {id:250,nome:'Pedro Sirius',email:'',phone:'Curitiba',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'CS',empresa:'Sales Lab CS',date:'2026-03-04',proximo:'2026-04-01'},
+    {id:251,nome:'Marcos Horn',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'Padrinho Brian',empresa:'TI',date:'2026-03-04',proximo:'2026-04-01'},
+    {id:252,nome:'João Paulo Braga',email:'',phone:'31 8757-0730',orig:'Importação',status:'Novo',pot:0,prod:'Público',obs:'Investminas lítio',empresa:'Invest Minas',date:'2026-03-04',proximo:'2026-04-01'},
+    {id:253,nome:'Douglas Machado',email:'',phone:'Cachoeira do Sul',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'',empresa:'Horbach',date:'2026-03-04',proximo:'2026-04-01'},
+    {id:254,nome:'Alceu Menegol',email:'',phone:'Passo Fundo',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'',empresa:'ACERGS',date:'2026-03-04',proximo:'2026-04-01'},
+    {id:255,nome:'Alexssandro Bihalva',email:'',phone:'RS',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'',empresa:'Agrotrigo',date:'2026-03-04',proximo:'2026-04-01'},
+    {id:256,nome:'Roges Pagnussat',email:'',phone:'Passo Fundo',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'',empresa:'CEPAL',date:'2026-03-04',proximo:'2026-04-01'},
+    {id:257,nome:'Edson Daycoval',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'Banco',obs:'Parceria',empresa:'Daycoval',date:'2026-03-04',proximo:'2026-04-01'},
+    {id:258,nome:'Paulo Francisco',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'Beneficios',date:'2026-03-04',proximo:'2026-04-01'},
+    {id:259,nome:'Leonardo Mariano',email:'',phone:'Paranaguá',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'Alfamar',date:'2026-03-04',proximo:'2026-04-01'},
+    {id:260,nome:'Luiz Gomes',email:'',phone:'São Paulo',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'',empresa:'Médico',date:'2026-03-04',proximo:'2026-04-01'},
+    {id:261,nome:'Bruna Oliveira',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Basseto Imóveis',date:'2026-03-04',proximo:'2026-04-01'},
+    {id:262,nome:'Allan Sahb',email:'',phone:'Juiz de Fora',orig:'Importação',status:'Novo',pot:0,prod:'Finanças',obs:'',empresa:'Seguros CS',date:'2026-03-04',proximo:'2026-04-01'},
+    {id:263,nome:'Gilberto (Academia)',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Empresário',date:'2026-03-04',proximo:'2026-04-01'},
+    {id:264,nome:'Cezar',email:'',phone:'35 9967-2902',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'Usina fotovoltaica',date:'2026-03-04',proximo:'2026-04-01'},
+    {id:265,nome:'Niwton Luiz Carlotto',email:'',phone:'BC',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'Disse que tem assessoria',empresa:'Loja de móveis (sudden)',date:'2026-03-05',proximo:'2026-04-02'},
+    {id:266,nome:'WALDIR ALVES',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Tinha conta no BTG. Assessor era da XP, foi pro BTG e depois voltou pra XP. Enviei endereço para vir até o escritório',empresa:'(Sudden)',date:'2026-03-05',proximo:'2026-04-02'},
+    {id:267,nome:'RENATO SALVATORE',email:'',phone:'11',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Ligar amanhã',empresa:'(Sudden)',date:'2026-03-05',proximo:'2026-04-02'},
+    {id:268,nome:'CARCIO SOBRAL PORTO',email:'',phone:'Aracaju',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'Já tem atendimento BTG aracaju',empresa:'Médico (Sudden)',date:'2026-03-05',proximo:'2026-04-02'},
+    {id:269,nome:'(Munir) MFARES INFORMATICA IT SERVICES LTDA',email:'',phone:'11',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'Tem conta BTG. Marcar reunião',empresa:'TI (Sudden)',date:'2026-03-05',proximo:'2026-04-02'},
+    {id:270,nome:'ANA CAROLINA PARREIRA PADUA RAMOS',email:'',phone:'16 98252-1853',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Está na Blue3. Mudou de AAI recentemente',empresa:'(Sudden)',date:'2026-03-05',proximo:'2026-04-02'},
+    {id:271,nome:'Gabriel Cesar',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Finanças',obs:'',empresa:'M3',date:'2026-03-05',proximo:'2026-04-02'},
+    {id:272,nome:'Andre Wertheimer Pascual',email:'',phone:'21 97651-7589',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'',empresa:'040 Venture Capital (CS)',date:'2026-03-05',proximo:'2026-04-02'},
+    {id:273,nome:'Junior',email:'',phone:'São Paulo',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'Parceria',empresa:'Agronegociar',date:'2026-03-05',proximo:'2026-04-02'},
+    {id:274,nome:'Adriano',email:'',phone:'11 97226-2332',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'Três pontas - crédito para platação de café',empresa:'Moat',date:'2026-03-05',proximo:'2026-04-02'},
+    {id:275,nome:'Gabriel Picolini',email:'',phone:'São Paulo',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Picolini',date:'2026-03-05',proximo:'2026-04-02'},
+    {id:276,nome:'Edinei',email:'',phone:'SC',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Agropecuária',date:'2026-03-05',proximo:'2026-04-02'},
+    {id:277,nome:'João Cerealista São Miguel',email:'',phone:'55 8116-6594',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Cerealista',date:'2026-03-05',proximo:'2026-04-02'},
+    {id:278,nome:'Marcelo',email:'',phone:'+55 55 99987-2185',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Grupo Uggeri',date:'2026-03-05',proximo:'2026-04-02'},
+    {id:279,nome:'Ulysses Melo',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Focus',date:'2026-03-05',proximo:'2026-04-02'},
+    {id:280,nome:'Luesley Rezende',email:'',phone:'67 9219-2878',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'Antecipação recebíveis loteamento MS. Irmã trabalha na HVM incorporadora (imobhub Ceres)',empresa:'Adv (CS)',date:'2026-03-05',proximo:'2026-04-02'},
+    {id:281,nome:'Cinthia',email:'',phone:'Paranagua',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'Trabalha com comex em paranaguá. Fertilizantes e outros',empresa:'Fertilizantes',date:'2026-03-05',proximo:'2026-04-02'},
+    {id:282,nome:'Jefferson',email:'',phone:'Paranagua',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'Trabalha com comex em RIG. Fertilizantes e outros',empresa:'Mar shipping',date:'2026-03-05',proximo:'2026-04-02'},
+    {id:283,nome:'Dyego',email:'',phone:'Goiás',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'',empresa:'Adv',date:'2026-03-05',proximo:'2026-04-02'},
+    {id:284,nome:'Emily',email:'',phone:'Joiville',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'Jayfex',date:'2026-03-05',proximo:'2026-04-02'},
+    {id:285,nome:'Vinicius Vale',email:'',phone:'11 98482-1841',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'',empresa:'Sudoers',date:'2026-03-05',proximo:'2026-04-02'},
+    {id:286,nome:'Emily',email:'',phone:'Brasilia',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'ACEBRA',date:'2026-03-06',proximo:'2026-04-03'},
+    {id:287,nome:'Henrique Faria',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'Quati',date:'2026-03-06',proximo:'2026-04-03'},
+    {id:288,nome:'RENATA CESAR DA SILVEIRA',email:'',phone:'RJ',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'Trabalha com corretagem de casas de praia no RJ. Ligar semana que vem',empresa:'Corretora de Imóveis (sudden)',date:'2026-03-06',proximo:'2026-04-03'},
+    {id:289,nome:'Jefferson da Silveira',email:'',phone:'48 8448-9678',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'500k para empreendimento de 54M de VGV que vai ser constuido. Já tem empreendimento de 72 unidades em construção',empresa:'Incorporadora Tijucas',date:'2026-03-06',proximo:'2026-04-03'},
+    {id:290,nome:'Luis Francisco Delpizzo Miranda',email:'',phone:'Tubarão',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'Estava com a filha. Ligar a tarde',empresa:'Juiz (sudden)',date:'2026-03-06',proximo:'2026-04-03'},
+    {id:291,nome:'MARIA MARLI MUNARI',email:'',phone:'48 9987-1399',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'Cocal do sul',empresa:'(Sudden)',date:'2026-03-06',proximo:'2026-04-03'},
+    {id:292,nome:'Oscar Bruna Romero',email:'',phone:'48 8423-5857',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'Estava com paciente. Já tem planejamento financeiro',empresa:'Médico (Sudden)',date:'2026-03-06',proximo:'2026-04-03'},
+    {id:293,nome:'VALDIR@JETCOBRASIL.COM.BR',email:'',phone:'11988372166',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'Ligar outra hora',empresa:'jetco (sudden)',date:'2026-03-06',proximo:'2026-04-03'},
+    {id:294,nome:'CLOTILDE MODENEZ',email:'',phone:'Limeira',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'Falar ano que vem',empresa:'Médica (sudden)',date:'2026-03-06',proximo:'2026-04-03'},
+    {id:295,nome:'DANIELA SAID HAIDAR CHOHFI',email:'',phone:'11',orig:'Importação',status:'Novo',pot:0,prod:'Marketing',obs:'Retornar',empresa:'Empresária (sudden)',date:'2026-03-06',proximo:'2026-04-03'},
+    {id:296,nome:'ANDREA CRISTINA PARREIRA NUNES',email:'',phone:'11',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'Empresa mkt agro',empresa:'Agro (sudden)',date:'2026-03-06',proximo:'2026-04-03'},
+    {id:297,nome:'NATHALIA REGINA DE CASTRO ABREU',email:'',phone:'47',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'Ligar a tarde',empresa:'Adv (Sudden)',date:'2026-03-06',proximo:'2026-04-03'},
+    {id:298,nome:'Maria Cecilia - Jorge Vicente advogaods',email:'',phone:'15',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'',empresa:'Adv (Sudden)',date:'2026-03-06',proximo:'2026-04-03'},
+    {id:299,nome:'VICTOR HUGO LOTH',email:'',phone:'47 9980-2606',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'',empresa:'Beto carreiro (sudden)',date:'2026-03-06',proximo:'2026-04-03'},
+    {id:300,nome:'CATARINA HELENA B M BRAZAY SANTANA',email:'',phone:'11 99914-6110',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'',empresa:'(sudden)',date:'2026-03-06',proximo:'2026-04-03'},
+    {id:301,nome:'RICARDO GANANCIO RIGONATTI',email:'',phone:'11',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'',empresa:'(sudden)',date:'2026-03-06',proximo:'2026-04-03'},
+    {id:302,nome:'COOPERMAQ - COOPERATIVA DE MAQUINAS E EQUIPAMENTOS',email:'',phone:'Urussanga',orig:'Importação',status:'Novo',pot:0,prod:'Indústria',obs:'urusanga. Fabiano financeiro da empresa. Jose carlos que toma a decisao final. Viram que tem ativos exclussivo da xp pra manter. foi vendida para fundo de investimento. está com o caixa apenas em liquidez, não tem feito comex',empresa:'(sudden)',date:'2026-03-06',proximo:'2026-04-03'},
+    {id:303,nome:'JOSE DE ARAUJO CAVALCANTE NETO',email:'',phone:'92',orig:'Importação',status:'Novo',pot:0,prod:'Marketing',obs:'',empresa:'Netelho (Sudden)',date:'2026-03-06',proximo:'2026-04-03'},
+    {id:304,nome:'EDUARDO VIEIRA DUARTE',email:'',phone:'17',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Eng (Sudden)',date:'2026-03-06',proximo:'2026-04-03'},
+    {id:305,nome:'Basilio Elias De Caro',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'Já tem XP e BB. Retornar em Janeiro',empresa:'Procurador (Sudden)',date:'2026-03-06',proximo:'2026-04-03'},
+    {id:306,nome:'Firmino Lino',email:'',phone:'37 9830-5521',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Agro Pompéu',date:'2026-03-06',proximo:'2026-04-03'},
+    {id:307,nome:'Gustavo Micapel',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'CRP e Micapel',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:308,nome:'Gabriel Costa',email:'',phone:'31 8848-5157',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'Costa Energia CS',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:309,nome:'Gabriel Decarli',email:'',phone:'Curitiba',orig:'Importação',status:'Novo',pot:0,prod:'Marketing',obs:'',empresa:'MKT CS',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:310,nome:'Humberto Manfroi',email:'',phone:'45 9125-3700',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Aeropul (CS)',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:311,nome:'Bruno Rivetti',email:'',phone:'11 96304-8918',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'Comex (CS)',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:312,nome:'Máiron',email:'',phone:'46 9109-6663',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'Maringá',empresa:'Sucavalli (CS)',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:313,nome:'Diego Carriel',email:'',phone:'14',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'CS',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:314,nome:'Renan Reisen',email:'',phone:'Teixeira de Freitas',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Incorporadora (CS)',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:315,nome:'Matheus Correa',email:'',phone:'SP',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'Fargo Global (CS)',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:316,nome:'Lucas Paludo',email:'',phone:'54 9984-0922',orig:'Importação',status:'Novo',pot:0,prod:'Consultoria',obs:'Passo Fundo',empresa:'BTS Partners (CS)',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:317,nome:'Roberto Aguiar JR',email:'',phone:'11 99198-4647',orig:'Importação',status:'Novo',pot:0,prod:'Consultoria',obs:'',empresa:'Forward Negócios (CS)',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:318,nome:'Thiago',email:'',phone:'47 9186-2009',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'Empresa de óculos, exportação, BC',empresa:'Representação comercial (CS)',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:319,nome:'Wadis',email:'',phone:'47 9911-9309',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'Falar de novo. Vão iniciar um empreendimento na Brava em 2026',empresa:'Dall Empreendimentos (Sudden)',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:320,nome:'ANTONIO AQUINO NETO',email:'',phone:'SP',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'Visitar em SP em fevereiro',empresa:'Dono Hospital CEMA (sudden)',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:321,nome:'Guilherme Bressan',email:'',phone:'DDD 19 e 49',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'SVS Log e Aduaneira (CS)',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:322,nome:'Clovis Mezzari',email:'',phone:'Criciúma',orig:'Importação',status:'Novo',pot:0,prod:'Indústria',obs:'500k dividendos, fazer simulação, gostou da compromissada, quer migrar a empresa pro Paraguai',empresa:'Oregon (sudden)',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:323,nome:'João Ricardo',email:'',phone:'Goiania',orig:'Importação',status:'Novo',pot:0,prod:'Finanças',obs:'CRI BC',empresa:'Full Care MFO (CS)',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:324,nome:'Daniel tellicojus',email:'',phone:'11',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'Adv Paraguai',empresa:'tellicojus',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:325,nome:'Manuel',email:'',phone:'PY',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'Adv Paraguai',empresa:'Paraguay Unlocked',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:326,nome:'William Rodrigues',email:'',phone:'48',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'SDR',empresa:'SDR (sudden)',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:327,nome:'Carlos Jorge',email:'',phone:'98 8897-4647',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'FIEMA',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:328,nome:'Gabriel Baron',email:'',phone:'47 9252-7004',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'',empresa:'SP',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:329,nome:'Thiffany Veiga',email:'',phone:'61 9631-1410',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'ACEBRA',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:330,nome:'Daniel Adv Tributarista',email:'',phone:'47 9926-2643',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'',empresa:'Tributarista',date:'2026-03-09',proximo:'2026-04-06'},
+    {id:331,nome:'vinicius tellicojus',email:'',phone:'PY',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'Adv Paraguai',empresa:'ADV',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:332,nome:'Igor Inovar',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Inovar',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:333,nome:'Hideraldo Henrique',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'Ceasa',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:334,nome:'Carlos San Carlos',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'San Carlos Imob',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:335,nome:'Pedro Raja',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'',empresa:'Raja Ventures',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:336,nome:'Paulo',email:'',phone:'67 9667-1382',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'Construtora em Campo Grande/MS , faz postos para a Shell, licitações de asfalto, loteadora 1 empreendimento 38 unidadaes, próximo empreendimento 128 terrenos, quer fazer antecipação de recebíveis. Teve interesse em financiamento de máquinas, tem licitação de contrato de 2,5MM. Usam a SICRED',empresa:'Loteamento MS (Luesley CS)',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:337,nome:'Vinícius Barquete',email:'',phone:'Varginha',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'Não respondeu',empresa:'Barquete Advogados',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:338,nome:'Tobias',email:'',phone:'Maringá',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'Reunião',empresa:'Direito Rural',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:339,nome:'Iuri Castro',email:'',phone:'LEM',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Portal Bahia Agrícola',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:340,nome:'Caio Carvalho',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Tim',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:341,nome:'Caio Assis',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Agro',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:342,nome:'Helio',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Agro',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:343,nome:'Renato Oliveira',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'Frigotudo',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:344,nome:'André Dilica',email:'',phone:'Cristalina',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Nitro',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:345,nome:'Ivo Castanheira',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'Público',obs:'',empresa:'Dono apto 805',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:346,nome:'Carol Lagoa',email:'',phone:'13',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'Leva empresas para o Paraguai',empresa:'PY (CS)',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:347,nome:'ANTONIO ROBERTO GUEDIN',email:'',phone:'48',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'Material de construção em Tijucas',empresa:'(sudden)',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:348,nome:'Jefferson BH',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Público',obs:'',empresa:'Funcionário Público (sudden)',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:349,nome:'Marcio Rodrigues',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'Visita e parceria',empresa:'Mais Envios',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:350,nome:'Cintia Financeiro',email:'',phone:'Sete Lagoas',orig:'Importação',status:'Novo',pot:0,prod:'Mineração',obs:'',empresa:'Metalfer',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:351,nome:'Bruno Marva',email:'',phone:'19 99819-4394',orig:'Importação',status:'Novo',pot:0,prod:'Marketing',obs:'Interessou no cartão BTG (Msg enviado no grupo)',empresa:'T1me One (CS)',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:352,nome:'Vitor Dal Pont Savi',email:'',phone:'48 9917-1594',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'Interessou no cartão BTG (Msg enviado no grupo)',empresa:'Harpa Jurídico (CS)',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:353,nome:'Joel Silva',email:'',phone:'48',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'Reunião presencial feita',empresa:'Monteiro (Sudden)',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:354,nome:'Bartira Netto',email:'',phone:'47 9739-0200',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Studios SP (CS)',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:355,nome:'Gaucho CS',email:'',phone:'51 8132-5881',orig:'Importação',status:'Novo',pot:0,prod:'',obs:'Procurou conta PJ BB ou Bradesco na CS',empresa:'(CS)',date:'2026-03-10',proximo:'2026-04-07'},
+    {id:356,nome:'Bruno Audio sistem',email:'',phone:'11 99170-6433',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'12k usd indicação SVS',empresa:'Trading (SVS)',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:357,nome:'Pedro Blotta',email:'',phone:'19',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'Comex (SVS)',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:358,nome:'Rodrigo Cabral',email:'',phone:'48 9951-1987',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'',empresa:'Médico',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:359,nome:'João Candido',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'Brejão',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:360,nome:'Manoel Sezinando',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'Luma Tur',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:361,nome:'Raphael Turquet',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'',empresa:'TI',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:362,nome:'Alvaro',email:'',phone:'Joinville',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'',empresa:'TI (CS)',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:363,nome:'Fernando Correa',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'',empresa:'ADV',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:364,nome:'Vinicius Silva',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'',empresa:'Led Internet',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:365,nome:'Vitor Paiva',email:'',phone:'Salvador',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'',empresa:'Odonto',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:366,nome:'Joe Maciel',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Marketing',obs:'',empresa:'Mkt',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:367,nome:'Raul Campos',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'Brejão',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:368,nome:'Pedro Temponi',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'Grupo Triex - Açúcar | Etanol | Energia',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:369,nome:'José Victor',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Marketing',obs:'',empresa:'Bet7k',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:370,nome:'Mario Ritondo',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Construtora',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:371,nome:'Guilherme da Beth',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'Poker',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:372,nome:'Fabio prefeito Igarating',email:'',phone:'Igaratinga',orig:'Importação',status:'Novo',pot:0,prod:'Público',obs:'Prefeito 4 mandatos, presidente do consórcio prefeito 037',empresa:'Prefeito (Kenedy)',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:373,nome:'Osvaldo Assunção',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Imobiliária',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:374,nome:'Colfac',email:'',phone:'Itajaí',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:375,nome:'Feaduaneiros',email:'',phone:'',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:376,nome:'Intermodal South America',email:'',phone:'Evento',orig:'Importação',status:'Novo',pot:0,prod:'Evento COMEX',obs:'',empresa:'',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:377,nome:'Alessandro Di Giuseppe',email:'',phone:'48 9178-0053',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'SindDay',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:378,nome:'Secovi',email:'',phone:'',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Sindicato',date:'2026-03-11',proximo:'2026-04-08'},
+    {id:379,nome:'Adil Bastos',email:'',phone:'11',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'Leva empresas para o Paraguai',empresa:'PY (CS)',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:380,nome:'Celina Schelemper',email:'',phone:'48 8815-5237',orig:'Importação',status:'Novo',pot:0,prod:'Público',obs:'Vai vender apto',empresa:'Locatária Heitor Luz',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:381,nome:'Leonardo Maciel',email:'',phone:'37',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'BR Corte',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:382,nome:'Marcelo Brito',email:'',phone:'67 9933-5350',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'(Compadre Paulo)',empresa:'Construtora (Paulo MS)',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:383,nome:'Paulo (Deus é fiel)',email:'',phone:'67 9667-1382',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Construtora (Luesley CS)',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:384,nome:'João Victor Junqueira',email:'',phone:'62 9237-7256',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Rural Data (CS)',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:385,nome:'Leo Oliveira',email:'',phone:'48 9161-6006',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Construtora (CS)',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:386,nome:'Henrique Lacerda',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Agro',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:387,nome:'Vitor Tagliavini',email:'',phone:'11 99791-7554',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Mercoagro > Sicredi',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:388,nome:'Alex Cortezia',email:'',phone:'+55 66 99652-2258',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Cortezia',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:389,nome:'Cristiane',email:'',phone:'+55 51 99154-3916',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Agrotrigo',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:390,nome:'Gilnei',email:'',phone:'54 9998-5879',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Grupo Agros',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:391,nome:'Julcimar',email:'',phone:'+55 54 99122-0808',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Cereais Marau',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:392,nome:'Alex Novello',email:'',phone:'46 9973-7587',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'Marcar reunião',empresa:'AONexus',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:393,nome:'Igor Metz',email:'',phone:'44 9998-4401',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'Retornar contato segunda',empresa:'Corretor de grãos',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:394,nome:'Bruno Barros',email:'',phone:'+55 55 99919-1004',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Agrofutura',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:395,nome:'Fernando Junior Albuquerque',email:'',phone:'55 9609-0894',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'Email enviado sobre operação de soja',empresa:'Agrofutura',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:396,nome:'Alexandre Gonzaga',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Prefeitura',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:397,nome:'Edson IMK',email:'',phone:'Passo Fundo',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'IKM',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:398,nome:'Cristiano Valadres',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Público',obs:'',empresa:'Funcionário Público',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:399,nome:'Carlos Victor',email:'',phone:'62985203296',orig:'Importação',status:'Novo',pot:0,prod:'Finanças',obs:'',empresa:'HighPar',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:400,nome:'Fecomercio SC',email:'',phone:'',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'',date:'2026-03-12',proximo:'2026-04-09'},
+    {id:401,nome:'Jonatas Granieri',email:'',phone:'São Paulo',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'Granieri',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:402,nome:'Cassio Garcia',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Corretor',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:403,nome:'Thiago Dayrell',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'Público',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:404,nome:'Pedro Bilin',email:'',phone:'Passo Fundo',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'',empresa:'80vintebot',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:405,nome:'Higor Campos',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Agility',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:406,nome:'Sergio Martins',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Marketing',obs:'',empresa:'Sonix',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:407,nome:'Marcelo Marques',email:'',phone:'31 7339-5146',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'',empresa:'Médico (Lucas Dutra)',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:408,nome:'Gilney (Amigo Fernando)',email:'',phone:'31',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'Sucessão e holding',empresa:'',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:409,nome:'Leonardo Cordeiro',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Mason Equipamentos',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:410,nome:'Thiago Barros',email:'',phone:'Ouro Preto',orig:'Importação',status:'Novo',pot:0,prod:'Público',obs:'',empresa:'UFOP',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:411,nome:'Ivan Mendes',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Lottuz',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:412,nome:'Ale Girotto',email:'',phone:'Campo Grande',orig:'Importação',status:'Novo',pot:0,prod:'Marketing',obs:'',empresa:'NS',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:413,nome:'Sinclair Philips',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'',empresa:'Médico',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:414,nome:'Felipe Monteiro',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'Madeira',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:415,nome:'Rodrigo Assunção',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'',empresa:'Bet7k',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:416,nome:'Gabriel Pimenta',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Médico',obs:'',empresa:'Médico',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:417,nome:'Guilherme Eduardo',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'Empresa',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:418,nome:'Olavo Bronzato',email:'',phone:'RS',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Empresa',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:419,nome:'Valéria Valadares',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'Primos disk',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:420,nome:'Marcus Tvs',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'',empresa:'Tech',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:421,nome:'Breno de Andrade',email:'',phone:'21 96774-2404',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'',empresa:'(CS)',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:422,nome:'Alan Mosko',email:'',phone:'41 93300-0379',orig:'Importação',status:'Novo',pot:0,prod:'Marketing',obs:'',empresa:'(CS)',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:423,nome:'Glauco Hobby',email:'',phone:'47 8457-1159',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'Hobby Brasil (Sudden)',date:'2026-03-13',proximo:'2026-04-10'},
+    {id:424,nome:'Felipe Doneda',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'Tático soluções, atende mais de 40 construtoras em SC',empresa:'Tático',date:'2026-03-16',proximo:'2026-04-13'},
+    {id:425,nome:'Crisipo Valadares',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Agro',date:'2026-03-16',proximo:'2026-04-13'},
+    {id:426,nome:'Luan Augusto',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'',empresa:'UFOP',date:'2026-03-16',proximo:'2026-04-13'},
+    {id:427,nome:'Matheus Candido',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Finanças',obs:'',empresa:'NS',date:'2026-03-16',proximo:'2026-04-13'},
+    {id:428,nome:'Gustavo Valadares',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'Metalfer - Transjofer',date:'2026-03-16',proximo:'2026-04-13'},
+    {id:429,nome:'Matheus Freire',email:'',phone:'EUA',orig:'Importação',status:'Novo',pot:0,prod:'Finanças',obs:'',empresa:'SB',date:'2026-03-16',proximo:'2026-04-13'},
+    {id:430,nome:'Leal Monteiro',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Construtora/Incorporadora/Imobiliária',obs:'',empresa:'Eng Civil',date:'2026-03-16',proximo:'2026-04-13'},
+    {id:431,nome:'Paulo Gomide',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'',empresa:'SB',date:'2026-03-16',proximo:'2026-04-13'},
+    {id:432,nome:'João Minsian',email:'',phone:'Santos',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'Minsian',date:'2026-03-16',proximo:'2026-04-13'},
+    {id:433,nome:'Hiper Textil',email:'',phone:'Pedir indicação luis',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'Hiper Textil',date:'2026-03-16',proximo:'2026-04-13'},
+    {id:434,nome:'Guilherme Chaves',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'',empresa:'Hotel Chaves',date:'2026-03-16',proximo:'2026-04-13'},
+    {id:435,nome:'Leonardo Fernandes',email:'',phone:'Pompéu',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'AF',date:'2026-03-16',proximo:'2026-04-13'},
+    {id:436,nome:'Victor Martins',email:'',phone:'PY',orig:'Importação',status:'Novo',pot:0,prod:'Outros',obs:'',empresa:'Click to pay',date:'2026-03-16',proximo:'2026-04-13'},
+    {id:437,nome:'Antonio Augusto Golinelli',email:'',phone:'43 8847-7241',orig:'Importação',status:'Novo',pot:0,prod:'Agro',obs:'',empresa:'(CS)',date:'2026-03-16',proximo:'2026-04-13'},
+    {id:438,nome:'Tiago Carnaval',email:'',phone:'44 9956-8349',orig:'Importação',status:'Novo',pot:0,prod:'Contabilidade',obs:'',empresa:'(CS)',date:'2026-03-16',proximo:'2026-04-13'},
+    {id:439,nome:'Guilherme Marques',email:'',phone:'Floripa',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'Familia tem fazenda em botucatu. Tem necessidade de planejamento patrimonial para os pais e renda mensal. biomassa e biochar. busca 845k em 10% da empresa. Falei com Raja Ventures',empresa:'Carbon Remove',date:'2026-03-16',proximo:'2026-04-13'},
+    {id:440,nome:'Lucas Morais',email:'',phone:'BH',orig:'Importação',status:'Novo',pot:0,prod:'Marketing',obs:'',empresa:'Mkt',date:'2026-03-16',proximo:'2026-04-13'},
+    {id:441,nome:'Thiago Telles',email:'',phone:'Curitiba',orig:'Importação',status:'Novo',pot:0,prod:'TI',obs:'',empresa:'Poker',date:'2026-03-16',proximo:'2026-04-13'},
+    {id:442,nome:'Pethrus Guanhães',email:'',phone:'GHS',orig:'Importação',status:'Novo',pot:0,prod:'Intermediação',obs:'',empresa:'GHS USA',date:'2026-03-16',proximo:'2026-04-13'},
+    {id:443,nome:'Guilherme Silva',email:'',phone:'11 96271-0239',orig:'Importação',status:'Novo',pot:0,prod:'Comércio',obs:'',empresa:'(CS)',date:'2026-03-17',proximo:'2026-04-14'},
+    {id:444,nome:'Guilherme Vieira',email:'',phone:'47 8921-3110',orig:'Importação',status:'Novo',pot:0,prod:'Advogado',obs:'Advogado para empresas de tecnologia',empresa:'Vep Law (CS)',date:'2026-03-17',proximo:'2026-04-14'},
+    {id:445,nome:'Colocar crédito celulares',email:'',phone:'',orig:'Importação',status:'Novo',pot:0,prod:'',obs:'',empresa:'',date:'2026-03-18',proximo:'2026-04-15'}
+  ];
+SEED_LEADS = DB.leads; DB.leads=[];
+DB.tasks = [
+    {id:300,tipo:'Ligação',cliente:'Rita de Cassia Fossati Silveira Evaldt',descricao:'Contato mensal — Rita de Cassia Fossati Silveira Evaldt',date:'2026-04-01',status:'Pendente'},
+    {id:301,tipo:'Ligação',cliente:'Israel Henrique Lima Martins',descricao:'Contato mensal — Israel Henrique Lima Martins',date:'2026-04-01',status:'Pendente'},
+    {id:302,tipo:'Ligação',cliente:'Kenedy Wallafy Souza de Oliveira',descricao:'Contato mensal — Kenedy Wallafy Souza de Oliveira',date:'2026-04-02',status:'Pendente'},
+    {id:303,tipo:'Ligação',cliente:'Leandro Ferreira da Silva Machado',descricao:'Contato mensal — Leandro Ferreira da Silva Machado',date:'2026-04-02',status:'Pendente'},
+    {id:304,tipo:'Ligação',cliente:'Leticia Ferreira da Silva Machado',descricao:'Contato mensal — Leticia Ferreira da Silva Machado',date:'2026-04-03',status:'Pendente'},
+    {id:305,tipo:'Ligação',cliente:'Maria de Fatima Panzera Carvalho',descricao:'Contato mensal — Maria de Fatima Panzera Carvalho',date:'2026-04-03',status:'Pendente'},
+    {id:306,tipo:'Ligação',cliente:'Jose Domingos Carvalho Filho',descricao:'Contato mensal — Jose Domingos Carvalho Filho',date:'2026-04-06',status:'Pendente'},
+    {id:307,tipo:'Ligação',cliente:'Joao Victor Ferreira Cunha',descricao:'Contato mensal — Joao Victor Ferreira Cunha',date:'2026-04-06',status:'Pendente'},
+    {id:308,tipo:'Ligação',cliente:'Felipe Fernandes Martins da Silveira',descricao:'Contato mensal — Felipe Fernandes Martins da Silveira',date:'2026-04-07',status:'Pendente'},
+    {id:309,tipo:'Ligação',cliente:'Kaio Muniz dos Santos',descricao:'Contato mensal — Kaio Muniz dos Santos',date:'2026-04-07',status:'Pendente'},
+    {id:310,tipo:'Ligação',cliente:'Lucas Maciel Dutra',descricao:'Contato mensal — Lucas Maciel Dutra',date:'2026-04-08',status:'Pendente'},
+    {id:311,tipo:'Ligação',cliente:'Rodrigo Thomaz Ferreira Santos',descricao:'Contato mensal — Rodrigo Thomaz Ferreira Santos',date:'2026-04-08',status:'Pendente'},
+    {id:312,tipo:'Ligação',cliente:'Gabriela Ferreira Vargas Cortez',descricao:'Contato mensal — Gabriela Ferreira Vargas Cortez',date:'2026-04-09',status:'Pendente'},
+    {id:313,tipo:'Ligação',cliente:'Joao Vitor Frutuoso Martins',descricao:'Contato mensal — Joao Vitor Frutuoso Martins',date:'2026-04-09',status:'Pendente'},
+    {id:314,tipo:'Ligação',cliente:'Fosfor Importacao Exportacao e Gestao LTDA',descricao:'Contato mensal — Fosfor Importacao Exportacao e Gestao LTDA',date:'2026-04-10',status:'Pendente'},
+    {id:315,tipo:'Ligação',cliente:'Amanda Schlottfeldt de Oliveira',descricao:'Contato mensal — Amanda Schlottfeldt de Oliveira',date:'2026-04-10',status:'Pendente'},
+    {id:316,tipo:'Ligação',cliente:'Davy Moreira Santos',descricao:'Contato mensal — Davy Moreira Santos',date:'2026-04-13',status:'Pendente'},
+    {id:317,tipo:'Ligação',cliente:'Euro Solucoes Tecnologicas LTDA',descricao:'Contato mensal — Euro Solucoes Tecnologicas LTDA',date:'2026-04-13',status:'Pendente'},
+    {id:318,tipo:'Ligação',cliente:'Fyr Servicos de Cobranca LTDA',descricao:'Contato mensal — Fyr Servicos de Cobranca LTDA',date:'2026-04-14',status:'Pendente'},
+    {id:319,tipo:'Ligação',cliente:'Ingo Camara Althoff',descricao:'Contato mensal — Ingo Camara Althoff',date:'2026-04-14',status:'Pendente'},
+    {id:320,tipo:'Ligação',cliente:'Leonardo de Bortoli',descricao:'Contato mensal — Leonardo de Bortoli',date:'2026-04-15',status:'Pendente'},
+    {id:321,tipo:'Ligação',cliente:'Ludwig Bezerra Sales',descricao:'Contato mensal — Ludwig Bezerra Sales',date:'2026-04-16',status:'Pendente'},
+    {id:322,tipo:'Ligação',cliente:'Luis Felipe Puhlmann da Luz',descricao:'Contato mensal — Luis Felipe Puhlmann da Luz',date:'2026-04-17',status:'Pendente'},
+    {id:323,tipo:'Ligação',cliente:'Pablo Teles Marques Ribeiro',descricao:'Contato mensal — Pablo Teles Marques Ribeiro',date:'2026-04-20',status:'Pendente'},
+    {id:324,tipo:'Ligação',cliente:'R828 LTDA',descricao:'Contato mensal — R828 LTDA',date:'2026-04-22',status:'Pendente'},
+    {id:325,tipo:'Ligação',cliente:'Richard Guilherme Aparecido Ferreira da Silva',descricao:'Contato mensal — Richard Guilherme Aparecido Ferreira da Silva',date:'2026-04-23',status:'Pendente'},
+    {id:326,tipo:'Ligação',cliente:'Ronaldo Paiva Costa',descricao:'Contato mensal — Ronaldo Paiva Costa',date:'2026-04-24',status:'Pendente'},
+    {id:327,tipo:'Ligação',cliente:'Teresinha Loureiro Gontijo',descricao:'Contato mensal — Teresinha Loureiro Gontijo',date:'2026-04-27',status:'Pendente'},
+    {id:328,tipo:'Ligação',cliente:'Thiago de Oliveira Lacerda',descricao:'Contato mensal — Thiago de Oliveira Lacerda',date:'2026-04-28',status:'Pendente'},
+    {id:329,tipo:'Ligação',cliente:'Valeria Valadares Ribeiro',descricao:'Contato mensal — Valeria Valadares Ribeiro',date:'2026-04-29',status:'Pendente'},
+    {id:330,tipo:'Ligação',cliente:'Vitor Valadares Ribeiro',descricao:'Contato mensal — Vitor Valadares Ribeiro',date:'2026-04-30',status:'Pendente'},
+    {id:331,tipo:'Ligação',cliente:'Fernando Bitencourt',descricao:'Follow-up lead — Fernando Bitencourt',date:'2026-04-01',status:'Pendente'},
+    {id:332,tipo:'Ligação',cliente:'Luiz Martins',descricao:'Follow-up lead — Luiz Martins',date:'2026-04-01',status:'Pendente'},
+    {id:333,tipo:'Ligação',cliente:'Lucas Kerber',descricao:'Follow-up lead — Lucas Kerber',date:'2026-04-01',status:'Pendente'},
+    {id:334,tipo:'Ligação',cliente:'Tiago Larsen Rocha',descricao:'Follow-up lead — Tiago Larsen Rocha',date:'2026-04-01',status:'Pendente'},
+    {id:335,tipo:'Ligação',cliente:'Rodrigo R',descricao:'Follow-up lead — Rodrigo R',date:'2026-04-01',status:'Pendente'},
+    {id:336,tipo:'Ligação',cliente:'Gustavo Farnezi',descricao:'Follow-up lead — Gustavo Farnezi',date:'2026-04-01',status:'Pendente'},
+    {id:337,tipo:'Ligação',cliente:'Wagner Camacho',descricao:'Follow-up lead — Wagner Camacho',date:'2026-04-01',status:'Pendente'},
+    {id:338,tipo:'Ligação',cliente:'Felipe Valadares (Galba)',descricao:'Follow-up lead — Felipe Valadares (Galba)',date:'2026-04-01',status:'Pendente'},
+    {id:339,tipo:'Ligação',cliente:'Luis Fernando Oliveira',descricao:'Follow-up lead — Luis Fernando Oliveira',date:'2026-04-01',status:'Pendente'},
+    {id:340,tipo:'Ligação',cliente:'Juscelino Reis',descricao:'Follow-up lead — Juscelino Reis',date:'2026-04-01',status:'Pendente'},
+    {id:341,tipo:'Ligação',cliente:'Leonardo Costa',descricao:'Follow-up lead — Leonardo Costa',date:'2026-04-01',status:'Pendente'},
+    {id:342,tipo:'Ligação',cliente:'Nicholas Meira',descricao:'Follow-up lead — Nicholas Meira',date:'2026-04-01',status:'Pendente'},
+    {id:343,tipo:'Ligação',cliente:'Isaias Fortkamp',descricao:'Follow-up lead — Isaias Fortkamp',date:'2026-04-01',status:'Pendente'},
+    {id:344,tipo:'Ligação',cliente:'Renato Pezinho',descricao:'Follow-up lead — Renato Pezinho',date:'2026-04-01',status:'Pendente'},
+    {id:345,tipo:'Ligação',cliente:'Rafael Santos Barboza AAI',descricao:'Follow-up lead — Rafael Santos Barboza AAI',date:'2026-04-01',status:'Pendente'},
+    {id:346,tipo:'Ligação',cliente:'Bruno Pimenta',descricao:'Follow-up lead — Bruno Pimenta',date:'2026-04-01',status:'Pendente'},
+    {id:347,tipo:'Ligação',cliente:'Pedro Santos',descricao:'Follow-up lead — Pedro Santos',date:'2026-04-01',status:'Pendente'},
+    {id:348,tipo:'Ligação',cliente:'Jhonnata Machado',descricao:'Follow-up lead — Jhonnata Machado',date:'2026-04-02',status:'Pendente'},
+    {id:349,tipo:'Ligação',cliente:'José Mendes',descricao:'Follow-up lead — José Mendes',date:'2026-04-02',status:'Pendente'},
+    {id:350,tipo:'Ligação',cliente:'Said',descricao:'Follow-up lead — Said',date:'2026-04-02',status:'Pendente'},
+    {id:351,tipo:'Ligação',cliente:'Marcelo Gonçalves',descricao:'Follow-up lead — Marcelo Gonçalves',date:'2026-04-02',status:'Pendente'},
+    {id:352,tipo:'Ligação',cliente:'Alessandra Duarte',descricao:'Follow-up lead — Alessandra Duarte',date:'2026-04-02',status:'Pendente'},
+    {id:353,tipo:'Ligação',cliente:'Antonio Candido',descricao:'Follow-up lead — Antonio Candido',date:'2026-04-02',status:'Pendente'},
+    {id:354,tipo:'Ligação',cliente:'Flavius Fabretti',descricao:'Follow-up lead — Flavius Fabretti',date:'2026-04-02',status:'Pendente'},
+    {id:355,tipo:'Ligação',cliente:'Bernardo Serra',descricao:'Follow-up lead — Bernardo Serra',date:'2026-04-02',status:'Pendente'},
+    {id:356,tipo:'Ligação',cliente:'Rodrigo Bataglin',descricao:'Follow-up lead — Rodrigo Bataglin',date:'2026-04-02',status:'Pendente'},
+    {id:357,tipo:'Ligação',cliente:'Charlis Haubert',descricao:'Follow-up lead — Charlis Haubert',date:'2026-04-02',status:'Pendente'},
+    {id:358,tipo:'Ligação',cliente:'Marcio Codebras',descricao:'Follow-up lead — Marcio Codebras',date:'2026-04-02',status:'Pendente'},
+    {id:359,tipo:'Ligação',cliente:'Luiz Claudio Santos',descricao:'Follow-up lead — Luiz Claudio Santos',date:'2026-04-02',status:'Pendente'},
+    {id:360,tipo:'Ligação',cliente:'Omar L Kfouri',descricao:'Follow-up lead — Omar L Kfouri',date:'2026-04-02',status:'Pendente'},
+    {id:361,tipo:'Ligação',cliente:'Danilo Casagrande',descricao:'Follow-up lead — Danilo Casagrande',date:'2026-04-02',status:'Pendente'},
+    {id:362,tipo:'Ligação',cliente:'Matheus Bueno',descricao:'Follow-up lead — Matheus Bueno',date:'2026-04-02',status:'Pendente'},
+    {id:363,tipo:'Ligação',cliente:'Aaron Arruda',descricao:'Follow-up lead — Aaron Arruda',date:'2026-04-02',status:'Pendente'},
+    {id:364,tipo:'Ligação',cliente:'Caio Malacco',descricao:'Follow-up lead — Caio Malacco',date:'2026-04-02',status:'Pendente'},
+    {id:365,tipo:'Ligação',cliente:'Rodolfo Presotto',descricao:'Follow-up lead — Rodolfo Presotto',date:'2026-04-03',status:'Pendente'},
+    {id:366,tipo:'Ligação',cliente:'Andre Hummel',descricao:'Follow-up lead — Andre Hummel',date:'2026-04-03',status:'Pendente'},
+    {id:367,tipo:'Ligação',cliente:'Francisco Nunes',descricao:'Follow-up lead — Francisco Nunes',date:'2026-04-03',status:'Pendente'},
+    {id:368,tipo:'Ligação',cliente:'NEIVA RENCK MACIEL',descricao:'Follow-up lead — NEIVA RENCK MACIEL',date:'2026-04-03',status:'Pendente'},
+    {id:369,tipo:'Ligação',cliente:'Luciano (MARIA ELIZABETH FONTOURA FROTA DECOURT)',descricao:'Follow-up lead — Luciano (MARIA ELIZABETH FONTOURA FROTA DECOURT)',date:'2026-04-03',status:'Pendente'},
+    {id:370,tipo:'Ligação',cliente:'IVOMAR GOMES DUARTE',descricao:'Follow-up lead — IVOMAR GOMES DUARTE',date:'2026-04-03',status:'Pendente'},
+    {id:371,tipo:'Ligação',cliente:'Thiago Vicoso dos Santos',descricao:'Follow-up lead — Thiago Vicoso dos Santos',date:'2026-04-03',status:'Pendente'},
+    {id:372,tipo:'Ligação',cliente:'Hamilton Roberto Carriço de Oliveira',descricao:'Follow-up lead — Hamilton Roberto Carriço de Oliveira',date:'2026-04-03',status:'Pendente'},
+    {id:373,tipo:'Ligação',cliente:'Marcelo Gasparino da Silva',descricao:'Follow-up lead — Marcelo Gasparino da Silva',date:'2026-04-03',status:'Pendente'},
+    {id:374,tipo:'Ligação',cliente:'Gustavo Bachtold',descricao:'Follow-up lead — Gustavo Bachtold',date:'2026-04-03',status:'Pendente'},
+    {id:375,tipo:'Ligação',cliente:'Marcelo Leandro de Souza',descricao:'Follow-up lead — Marcelo Leandro de Souza',date:'2026-04-03',status:'Pendente'},
+    {id:376,tipo:'Ligação',cliente:'Alexandre Jacques',descricao:'Follow-up lead — Alexandre Jacques',date:'2026-04-03',status:'Pendente'},
+    {id:377,tipo:'Ligação',cliente:'Brenno Penha',descricao:'Follow-up lead — Brenno Penha',date:'2026-04-03',status:'Pendente'},
+    {id:378,tipo:'Ligação',cliente:'Gabriela Sá',descricao:'Follow-up lead — Gabriela Sá',date:'2026-04-03',status:'Pendente'},
+    {id:379,tipo:'Ligação',cliente:'Adriana Fortes Deo',descricao:'Follow-up lead — Adriana Fortes Deo',date:'2026-04-03',status:'Pendente'},
+    {id:380,tipo:'Ligação',cliente:'Sales Audith Dsh',descricao:'Follow-up lead — Sales Audith Dsh',date:'2026-04-03',status:'Pendente'},
+    {id:381,tipo:'Ligação',cliente:'Soraia',descricao:'Follow-up lead — Soraia',date:'2026-04-03',status:'Pendente'},
+    {id:382,tipo:'Ligação',cliente:'Nagib Araujo Neto',descricao:'Follow-up lead — Nagib Araujo Neto',date:'2026-04-06',status:'Pendente'},
+    {id:383,tipo:'Ligação',cliente:'Leonardo Azevedo',descricao:'Follow-up lead — Leonardo Azevedo',date:'2026-04-06',status:'Pendente'},
+    {id:384,tipo:'Ligação',cliente:'Luciana Pires',descricao:'Follow-up lead — Luciana Pires',date:'2026-04-06',status:'Pendente'},
+    {id:385,tipo:'Ligação',cliente:'Felipe Drumond',descricao:'Follow-up lead — Felipe Drumond',date:'2026-04-06',status:'Pendente'},
+    {id:386,tipo:'Ligação',cliente:'David Costa',descricao:'Follow-up lead — David Costa',date:'2026-04-06',status:'Pendente'},
+    {id:387,tipo:'Ligação',cliente:'Beto Bastos',descricao:'Follow-up lead — Beto Bastos',date:'2026-04-06',status:'Pendente'},
+    {id:388,tipo:'Ligação',cliente:'Ronaldo de Arrazão BNU',descricao:'Follow-up lead — Ronaldo de Arrazão BNU',date:'2026-04-06',status:'Pendente'},
+    {id:389,tipo:'Ligação',cliente:'Daniel Scott',descricao:'Follow-up lead — Daniel Scott',date:'2026-04-06',status:'Pendente'},
+    {id:390,tipo:'Ligação',cliente:'Sil Ativos Financeiros',descricao:'Follow-up lead — Sil Ativos Financeiros',date:'2026-04-06',status:'Pendente'},
+    {id:391,tipo:'Ligação',cliente:'Pedro Henrique Haenisch Ern',descricao:'Follow-up lead — Pedro Henrique Haenisch Ern',date:'2026-04-06',status:'Pendente'},
+    {id:392,tipo:'Ligação',cliente:'Melissa Carvalho',descricao:'Follow-up lead — Melissa Carvalho',date:'2026-04-06',status:'Pendente'},
+    {id:393,tipo:'Ligação',cliente:'Thais (amiga Letícia)',descricao:'Follow-up lead — Thais (amiga Letícia)',date:'2026-04-06',status:'Pendente'},
+    {id:394,tipo:'Ligação',cliente:'João Victor Zilli',descricao:'Follow-up lead — João Victor Zilli',date:'2026-04-06',status:'Pendente'},
+    {id:395,tipo:'Ligação',cliente:'Andre VS LOG',descricao:'Follow-up lead — Andre VS LOG',date:'2026-04-06',status:'Pendente'},
+    {id:396,tipo:'Ligação',cliente:'Sergio Dualibe VS LOG',descricao:'Follow-up lead — Sergio Dualibe VS LOG',date:'2026-04-06',status:'Pendente'},
+    {id:397,tipo:'Ligação',cliente:'Dazio Cunha',descricao:'Follow-up lead — Dazio Cunha',date:'2026-04-06',status:'Pendente'},
+    {id:398,tipo:'Ligação',cliente:'Alexandre',descricao:'Follow-up lead — Alexandre',date:'2026-04-06',status:'Pendente'},
+    {id:399,tipo:'Ligação',cliente:'Rafael Costa',descricao:'Follow-up lead — Rafael Costa',date:'2026-04-07',status:'Pendente'},
+    {id:400,tipo:'Ligação',cliente:'João Freitas',descricao:'Follow-up lead — João Freitas',date:'2026-04-07',status:'Pendente'},
+    {id:401,tipo:'Ligação',cliente:'Daltro Soldateli',descricao:'Follow-up lead — Daltro Soldateli',date:'2026-04-07',status:'Pendente'},
+    {id:402,tipo:'Ligação',cliente:'Eduardo Koerich',descricao:'Follow-up lead — Eduardo Koerich',date:'2026-04-07',status:'Pendente'},
+    {id:403,tipo:'Ligação',cliente:'Bruno Oliveira',descricao:'Follow-up lead — Bruno Oliveira',date:'2026-04-07',status:'Pendente'},
+    {id:404,tipo:'Ligação',cliente:'Jamir Machado',descricao:'Follow-up lead — Jamir Machado',date:'2026-04-07',status:'Pendente'},
+    {id:405,tipo:'Ligação',cliente:'Josilande De Medeiros Gomes',descricao:'Follow-up lead — Josilande De Medeiros Gomes',date:'2026-04-07',status:'Pendente'},
+    {id:406,tipo:'Ligação',cliente:'Andrezza Rodrigues',descricao:'Follow-up lead — Andrezza Rodrigues',date:'2026-04-07',status:'Pendente'},
+    {id:407,tipo:'Ligação',cliente:'LUCIANA STERZO',descricao:'Follow-up lead — LUCIANA STERZO',date:'2026-04-07',status:'Pendente'},
+    {id:408,tipo:'Ligação',cliente:'ADRIANA PEREIRA BORRAJO',descricao:'Follow-up lead — ADRIANA PEREIRA BORRAJO',date:'2026-04-07',status:'Pendente'},
+    {id:409,tipo:'Ligação',cliente:'HENRIQUE SERGIO OAKIM JAIMOVICH',descricao:'Follow-up lead — HENRIQUE SERGIO OAKIM JAIMOVICH',date:'2026-04-07',status:'Pendente'},
+    {id:410,tipo:'Ligação',cliente:'MANOEL CARLOS GONCALVES NETO',descricao:'Follow-up lead — MANOEL CARLOS GONCALVES NETO',date:'2026-04-07',status:'Pendente'},
+    {id:411,tipo:'Ligação',cliente:'FABIANO MARQUES BORDALLO',descricao:'Follow-up lead — FABIANO MARQUES BORDALLO',date:'2026-04-07',status:'Pendente'},
+    {id:412,tipo:'Ligação',cliente:'CELSO CEOLIN',descricao:'Follow-up lead — CELSO CEOLIN',date:'2026-04-07',status:'Pendente'},
+    {id:413,tipo:'Ligação',cliente:'THIERRY DE ROGATIS LEBOIS',descricao:'Follow-up lead — THIERRY DE ROGATIS LEBOIS',date:'2026-04-07',status:'Pendente'},
+    {id:414,tipo:'Ligação',cliente:'ANDERSON TEIVE E ARGOLLO DULTRA',descricao:'Follow-up lead — ANDERSON TEIVE E ARGOLLO DULTRA',date:'2026-04-07',status:'Pendente'},
+    {id:415,tipo:'Ligação',cliente:'Fabio Plantel',descricao:'Follow-up lead — Fabio Plantel',date:'2026-04-07',status:'Pendente'},
+    {id:416,tipo:'Ligação',cliente:'LUIS CARLOS STUDZINSKI',descricao:'Follow-up lead — LUIS CARLOS STUDZINSKI',date:'2026-04-08',status:'Pendente'},
+    {id:417,tipo:'Ligação',cliente:'EUCINA DO ESPIRITO SANTO RIBEIRO',descricao:'Follow-up lead — EUCINA DO ESPIRITO SANTO RIBEIRO',date:'2026-04-08',status:'Pendente'},
+    {id:418,tipo:'Ligação',cliente:'ADRIANO MARTINS VILAS BOAS',descricao:'Follow-up lead — ADRIANO MARTINS VILAS BOAS',date:'2026-04-08',status:'Pendente'},
+    {id:419,tipo:'Ligação',cliente:'JOSE DE GODOY PEREIRA NETO',descricao:'Follow-up lead — JOSE DE GODOY PEREIRA NETO',date:'2026-04-08',status:'Pendente'},
+    {id:420,tipo:'Ligação',cliente:'Jose Augusto Rosa (Guto)',descricao:'Follow-up lead — Jose Augusto Rosa (Guto)',date:'2026-04-08',status:'Pendente'},
+    {id:421,tipo:'Ligação',cliente:'JOSE LUIZ SBRUNHERA',descricao:'Follow-up lead — JOSE LUIZ SBRUNHERA',date:'2026-04-08',status:'Pendente'},
+    {id:422,tipo:'Ligação',cliente:'JHONATHAN FELIPE DIAS',descricao:'Follow-up lead — JHONATHAN FELIPE DIAS',date:'2026-04-08',status:'Pendente'},
+    {id:423,tipo:'Ligação',cliente:'JVI - PARTICIPACOES SOCIETARIAS LTDA.',descricao:'Follow-up lead — JVI - PARTICIPACOES SOCIETARIAS LTDA.',date:'2026-04-08',status:'Pendente'},
+    {id:424,tipo:'Ligação',cliente:'Reginaldo Ferreira (Novo)',descricao:'Follow-up lead — Reginaldo Ferreira (Novo)',date:'2026-04-08',status:'Pendente'},
+    {id:425,tipo:'Ligação',cliente:'Daniel Funchal',descricao:'Follow-up lead — Daniel Funchal',date:'2026-04-08',status:'Pendente'},
+    {id:426,tipo:'Ligação',cliente:'Artur',descricao:'Follow-up lead — Artur',date:'2026-04-08',status:'Pendente'},
+    {id:427,tipo:'Ligação',cliente:'Eduardo',descricao:'Follow-up lead — Eduardo',date:'2026-04-08',status:'Pendente'},
+    {id:428,tipo:'Ligação',cliente:'Eloisio',descricao:'Follow-up lead — Eloisio',date:'2026-04-08',status:'Pendente'},
+    {id:429,tipo:'Ligação',cliente:'Jair Binnotti',descricao:'Follow-up lead — Jair Binnotti',date:'2026-04-08',status:'Pendente'},
+    {id:430,tipo:'Ligação',cliente:'Estenio Carvalho',descricao:'Follow-up lead — Estenio Carvalho',date:'2026-04-08',status:'Pendente'},
+    {id:431,tipo:'Ligação',cliente:'Carlos Eloi',descricao:'Follow-up lead — Carlos Eloi',date:'2026-04-08',status:'Pendente'},
+    {id:432,tipo:'Ligação',cliente:'Lucas Junqueira',descricao:'Follow-up lead — Lucas Junqueira',date:'2026-04-08',status:'Pendente'},
+    {id:433,tipo:'Ligação',cliente:'Marcos Farias',descricao:'Follow-up lead — Marcos Farias',date:'2026-04-09',status:'Pendente'},
+    {id:434,tipo:'Ligação',cliente:'Brian',descricao:'Follow-up lead — Brian',date:'2026-04-09',status:'Pendente'},
+    {id:435,tipo:'Ligação',cliente:'Wellinton',descricao:'Follow-up lead — Wellinton',date:'2026-04-09',status:'Pendente'},
+    {id:436,tipo:'Ligação',cliente:'Carlos Oliveira',descricao:'Follow-up lead — Carlos Oliveira',date:'2026-04-09',status:'Pendente'},
+    {id:437,tipo:'Ligação',cliente:'Ismael',descricao:'Follow-up lead — Ismael',date:'2026-04-09',status:'Pendente'},
+    {id:438,tipo:'Ligação',cliente:'Renan',descricao:'Follow-up lead — Renan',date:'2026-04-09',status:'Pendente'},
+    {id:439,tipo:'Ligação',cliente:'Cristiano',descricao:'Follow-up lead — Cristiano',date:'2026-04-09',status:'Pendente'},
+    {id:440,tipo:'Ligação',cliente:'Richard',descricao:'Follow-up lead — Richard',date:'2026-04-09',status:'Pendente'},
+    {id:441,tipo:'Ligação',cliente:'Astor',descricao:'Follow-up lead — Astor',date:'2026-04-09',status:'Pendente'},
+    {id:442,tipo:'Ligação',cliente:'Alaor',descricao:'Follow-up lead — Alaor',date:'2026-04-09',status:'Pendente'},
+    {id:443,tipo:'Ligação',cliente:'Lucas Pagnussat',descricao:'Follow-up lead — Lucas Pagnussat',date:'2026-04-09',status:'Pendente'},
+    {id:444,tipo:'Ligação',cliente:'Eider Portes',descricao:'Follow-up lead — Eider Portes',date:'2026-04-09',status:'Pendente'},
+    {id:445,tipo:'Ligação',cliente:'Clóvis Cenedese',descricao:'Follow-up lead — Clóvis Cenedese',date:'2026-04-09',status:'Pendente'},
+    {id:446,tipo:'Ligação',cliente:'Gustavo Cooperabaete',descricao:'Follow-up lead — Gustavo Cooperabaete',date:'2026-04-09',status:'Pendente'},
+    {id:447,tipo:'Ligação',cliente:'Frederico Amaral (Novo)',descricao:'Follow-up lead — Frederico Amaral (Novo)',date:'2026-04-09',status:'Pendente'},
+    {id:448,tipo:'Ligação',cliente:'MARIANELA ALINA BRENA FORTUNATO',descricao:'Follow-up lead — MARIANELA ALINA BRENA FORTUNATO',date:'2026-04-09',status:'Pendente'},
+    {id:449,tipo:'Ligação',cliente:'André Paiva',descricao:'Follow-up lead — André Paiva',date:'2026-04-09',status:'Pendente'},
+    {id:450,tipo:'Ligação',cliente:'Ezio',descricao:'Follow-up lead — Ezio',date:'2026-04-10',status:'Pendente'},
+    {id:451,tipo:'Ligação',cliente:'Sergio Borghesi',descricao:'Follow-up lead — Sergio Borghesi',date:'2026-04-10',status:'Pendente'},
+    {id:452,tipo:'Ligação',cliente:'LUCAS ANDRE GAVA SANTIAGO',descricao:'Follow-up lead — LUCAS ANDRE GAVA SANTIAGO',date:'2026-04-10',status:'Pendente'},
+    {id:453,tipo:'Ligação',cliente:'Roberto Machado',descricao:'Follow-up lead — Roberto Machado',date:'2026-04-10',status:'Pendente'},
+    {id:454,tipo:'Ligação',cliente:'Israel Martins',descricao:'Follow-up lead — Israel Martins',date:'2026-04-10',status:'Pendente'},
+    {id:455,tipo:'Ligação',cliente:'Leandro Heuser',descricao:'Follow-up lead — Leandro Heuser',date:'2026-04-10',status:'Pendente'},
+    {id:456,tipo:'Ligação',cliente:'Vinícius',descricao:'Follow-up lead — Vinícius',date:'2026-04-10',status:'Pendente'},
+    {id:457,tipo:'Ligação',cliente:'MS RESTAURANTES LTDA',descricao:'Follow-up lead — MS RESTAURANTES LTDA',date:'2026-04-10',status:'Pendente'},
+    {id:458,tipo:'Ligação',cliente:'CINTIA CIARROCCHI VENDEMIATTI',descricao:'Follow-up lead — CINTIA CIARROCCHI VENDEMIATTI',date:'2026-04-10',status:'Pendente'},
+    {id:459,tipo:'Ligação',cliente:'ALBERTO LEONARDO SUBY',descricao:'Follow-up lead — ALBERTO LEONARDO SUBY',date:'2026-04-10',status:'Pendente'},
+    {id:460,tipo:'Ligação',cliente:'VINICIUS ALVES FUKUSHIRO',descricao:'Follow-up lead — VINICIUS ALVES FUKUSHIRO',date:'2026-04-10',status:'Pendente'},
+    {id:461,tipo:'Ligação',cliente:'Alexandre Pires',descricao:'Follow-up lead — Alexandre Pires',date:'2026-04-10',status:'Pendente'},
+    {id:462,tipo:'Ligação',cliente:'Vivian ADV',descricao:'Follow-up lead — Vivian ADV',date:'2026-04-10',status:'Pendente'},
+    {id:463,tipo:'Ligação',cliente:'Pedro Sirius',descricao:'Follow-up lead — Pedro Sirius',date:'2026-04-10',status:'Pendente'},
+    {id:464,tipo:'Ligação',cliente:'Marcos Horn',descricao:'Follow-up lead — Marcos Horn',date:'2026-04-10',status:'Pendente'},
+    {id:465,tipo:'Ligação',cliente:'João Paulo Braga',descricao:'Follow-up lead — João Paulo Braga',date:'2026-04-10',status:'Pendente'},
+    {id:466,tipo:'Ligação',cliente:'Douglas Machado',descricao:'Follow-up lead — Douglas Machado',date:'2026-04-10',status:'Pendente'},
+    {id:467,tipo:'Ligação',cliente:'Alceu Menegol',descricao:'Follow-up lead — Alceu Menegol',date:'2026-04-13',status:'Pendente'},
+    {id:468,tipo:'Ligação',cliente:'Alexssandro Bihalva',descricao:'Follow-up lead — Alexssandro Bihalva',date:'2026-04-13',status:'Pendente'},
+    {id:469,tipo:'Ligação',cliente:'Roges Pagnussat',descricao:'Follow-up lead — Roges Pagnussat',date:'2026-04-13',status:'Pendente'},
+    {id:470,tipo:'Ligação',cliente:'Edson Daycoval',descricao:'Follow-up lead — Edson Daycoval',date:'2026-04-13',status:'Pendente'},
+    {id:471,tipo:'Ligação',cliente:'Paulo Francisco',descricao:'Follow-up lead — Paulo Francisco',date:'2026-04-13',status:'Pendente'},
+    {id:472,tipo:'Ligação',cliente:'Leonardo Mariano',descricao:'Follow-up lead — Leonardo Mariano',date:'2026-04-13',status:'Pendente'},
+    {id:473,tipo:'Ligação',cliente:'Luiz Gomes',descricao:'Follow-up lead — Luiz Gomes',date:'2026-04-13',status:'Pendente'},
+    {id:474,tipo:'Ligação',cliente:'Bruna Oliveira',descricao:'Follow-up lead — Bruna Oliveira',date:'2026-04-13',status:'Pendente'},
+    {id:475,tipo:'Ligação',cliente:'Allan Sahb',descricao:'Follow-up lead — Allan Sahb',date:'2026-04-13',status:'Pendente'},
+    {id:476,tipo:'Ligação',cliente:'Gilberto (Academia)',descricao:'Follow-up lead — Gilberto (Academia)',date:'2026-04-13',status:'Pendente'},
+    {id:477,tipo:'Ligação',cliente:'Cezar',descricao:'Follow-up lead — Cezar',date:'2026-04-13',status:'Pendente'},
+    {id:478,tipo:'Ligação',cliente:'Niwton Luiz Carlotto',descricao:'Follow-up lead — Niwton Luiz Carlotto',date:'2026-04-13',status:'Pendente'},
+    {id:479,tipo:'Ligação',cliente:'WALDIR ALVES',descricao:'Follow-up lead — WALDIR ALVES',date:'2026-04-13',status:'Pendente'},
+    {id:480,tipo:'Ligação',cliente:'RENATO SALVATORE',descricao:'Follow-up lead — RENATO SALVATORE',date:'2026-04-13',status:'Pendente'},
+    {id:481,tipo:'Ligação',cliente:'CARCIO SOBRAL PORTO',descricao:'Follow-up lead — CARCIO SOBRAL PORTO',date:'2026-04-13',status:'Pendente'},
+    {id:482,tipo:'Ligação',cliente:'(Munir) MFARES INFORMATICA IT SERVICES LTDA',descricao:'Follow-up lead — (Munir) MFARES INFORMATICA IT SERVICES LTDA',date:'2026-04-13',status:'Pendente'},
+    {id:483,tipo:'Ligação',cliente:'ANA CAROLINA PARREIRA PADUA RAMOS',descricao:'Follow-up lead — ANA CAROLINA PARREIRA PADUA RAMOS',date:'2026-04-13',status:'Pendente'},
+    {id:484,tipo:'Ligação',cliente:'Gabriel Cesar',descricao:'Follow-up lead — Gabriel Cesar',date:'2026-04-14',status:'Pendente'},
+    {id:485,tipo:'Ligação',cliente:'Andre Wertheimer Pascual',descricao:'Follow-up lead — Andre Wertheimer Pascual',date:'2026-04-14',status:'Pendente'},
+    {id:486,tipo:'Ligação',cliente:'Junior',descricao:'Follow-up lead — Junior',date:'2026-04-14',status:'Pendente'},
+    {id:487,tipo:'Ligação',cliente:'Adriano',descricao:'Follow-up lead — Adriano',date:'2026-04-14',status:'Pendente'},
+    {id:488,tipo:'Ligação',cliente:'Gabriel Picolini',descricao:'Follow-up lead — Gabriel Picolini',date:'2026-04-14',status:'Pendente'},
+    {id:489,tipo:'Ligação',cliente:'Edinei',descricao:'Follow-up lead — Edinei',date:'2026-04-14',status:'Pendente'},
+    {id:490,tipo:'Ligação',cliente:'João Cerealista São Miguel',descricao:'Follow-up lead — João Cerealista São Miguel',date:'2026-04-14',status:'Pendente'},
+    {id:491,tipo:'Ligação',cliente:'Marcelo',descricao:'Follow-up lead — Marcelo',date:'2026-04-14',status:'Pendente'},
+    {id:492,tipo:'Ligação',cliente:'Ulysses Melo',descricao:'Follow-up lead — Ulysses Melo',date:'2026-04-14',status:'Pendente'},
+    {id:493,tipo:'Ligação',cliente:'Luesley Rezende',descricao:'Follow-up lead — Luesley Rezende',date:'2026-04-14',status:'Pendente'},
+    {id:494,tipo:'Ligação',cliente:'Cinthia',descricao:'Follow-up lead — Cinthia',date:'2026-04-14',status:'Pendente'},
+    {id:495,tipo:'Ligação',cliente:'Jefferson',descricao:'Follow-up lead — Jefferson',date:'2026-04-14',status:'Pendente'},
+    {id:496,tipo:'Ligação',cliente:'Dyego',descricao:'Follow-up lead — Dyego',date:'2026-04-14',status:'Pendente'},
+    {id:497,tipo:'Ligação',cliente:'Emily',descricao:'Follow-up lead — Emily',date:'2026-04-14',status:'Pendente'},
+    {id:498,tipo:'Ligação',cliente:'Vinicius Vale',descricao:'Follow-up lead — Vinicius Vale',date:'2026-04-14',status:'Pendente'},
+    {id:499,tipo:'Ligação',cliente:'Emily',descricao:'Follow-up lead — Emily',date:'2026-04-14',status:'Pendente'},
+    {id:500,tipo:'Ligação',cliente:'Henrique Faria',descricao:'Follow-up lead — Henrique Faria',date:'2026-04-15',status:'Pendente'},
+    {id:501,tipo:'Ligação',cliente:'RENATA CESAR DA SILVEIRA',descricao:'Follow-up lead — RENATA CESAR DA SILVEIRA',date:'2026-04-15',status:'Pendente'},
+    {id:502,tipo:'Ligação',cliente:'Jefferson da Silveira',descricao:'Follow-up lead — Jefferson da Silveira',date:'2026-04-15',status:'Pendente'},
+    {id:503,tipo:'Ligação',cliente:'Luis Francisco Delpizzo Miranda',descricao:'Follow-up lead — Luis Francisco Delpizzo Miranda',date:'2026-04-15',status:'Pendente'},
+    {id:504,tipo:'Ligação',cliente:'MARIA MARLI MUNARI',descricao:'Follow-up lead — MARIA MARLI MUNARI',date:'2026-04-15',status:'Pendente'},
+    {id:505,tipo:'Ligação',cliente:'Oscar Bruna Romero',descricao:'Follow-up lead — Oscar Bruna Romero',date:'2026-04-15',status:'Pendente'},
+    {id:506,tipo:'Ligação',cliente:'VALDIR@JETCOBRASIL.COM.BR',descricao:'Follow-up lead — VALDIR@JETCOBRASIL.COM.BR',date:'2026-04-15',status:'Pendente'},
+    {id:507,tipo:'Ligação',cliente:'CLOTILDE MODENEZ',descricao:'Follow-up lead — CLOTILDE MODENEZ',date:'2026-04-15',status:'Pendente'},
+    {id:508,tipo:'Ligação',cliente:'DANIELA SAID HAIDAR CHOHFI',descricao:'Follow-up lead — DANIELA SAID HAIDAR CHOHFI',date:'2026-04-15',status:'Pendente'},
+    {id:509,tipo:'Ligação',cliente:'ANDREA CRISTINA PARREIRA NUNES',descricao:'Follow-up lead — ANDREA CRISTINA PARREIRA NUNES',date:'2026-04-15',status:'Pendente'},
+    {id:510,tipo:'Ligação',cliente:'NATHALIA REGINA DE CASTRO ABREU',descricao:'Follow-up lead — NATHALIA REGINA DE CASTRO ABREU',date:'2026-04-15',status:'Pendente'},
+    {id:511,tipo:'Ligação',cliente:'Maria Cecilia - Jorge Vicente advogaods',descricao:'Follow-up lead — Maria Cecilia - Jorge Vicente advogaods',date:'2026-04-15',status:'Pendente'},
+    {id:512,tipo:'Ligação',cliente:'VICTOR HUGO LOTH',descricao:'Follow-up lead — VICTOR HUGO LOTH',date:'2026-04-15',status:'Pendente'},
+    {id:513,tipo:'Ligação',cliente:'CATARINA HELENA B M BRAZAY SANTANA',descricao:'Follow-up lead — CATARINA HELENA B M BRAZAY SANTANA',date:'2026-04-15',status:'Pendente'},
+    {id:514,tipo:'Ligação',cliente:'RICARDO GANANCIO RIGONATTI',descricao:'Follow-up lead — RICARDO GANANCIO RIGONATTI',date:'2026-04-15',status:'Pendente'},
+    {id:515,tipo:'Ligação',cliente:'COOPERMAQ - COOPERATIVA DE MAQUINAS E EQUIPAMENTOS',descricao:'Follow-up lead — COOPERMAQ - COOPERATIVA DE MAQUINAS E EQUIPAMENTOS',date:'2026-04-15',status:'Pendente'},
+    {id:516,tipo:'Ligação',cliente:'JOSE DE ARAUJO CAVALCANTE NETO',descricao:'Follow-up lead — JOSE DE ARAUJO CAVALCANTE NETO',date:'2026-04-16',status:'Pendente'},
+    {id:517,tipo:'Ligação',cliente:'EDUARDO VIEIRA DUARTE',descricao:'Follow-up lead — EDUARDO VIEIRA DUARTE',date:'2026-04-16',status:'Pendente'},
+    {id:518,tipo:'Ligação',cliente:'Basilio Elias De Caro',descricao:'Follow-up lead — Basilio Elias De Caro',date:'2026-04-16',status:'Pendente'},
+    {id:519,tipo:'Ligação',cliente:'Firmino Lino',descricao:'Follow-up lead — Firmino Lino',date:'2026-04-16',status:'Pendente'},
+    {id:520,tipo:'Ligação',cliente:'Gustavo Micapel',descricao:'Follow-up lead — Gustavo Micapel',date:'2026-04-16',status:'Pendente'},
+    {id:521,tipo:'Ligação',cliente:'Gabriel Costa',descricao:'Follow-up lead — Gabriel Costa',date:'2026-04-16',status:'Pendente'},
+    {id:522,tipo:'Ligação',cliente:'Gabriel Decarli',descricao:'Follow-up lead — Gabriel Decarli',date:'2026-04-16',status:'Pendente'},
+    {id:523,tipo:'Ligação',cliente:'Humberto Manfroi',descricao:'Follow-up lead — Humberto Manfroi',date:'2026-04-16',status:'Pendente'},
+    {id:524,tipo:'Ligação',cliente:'Bruno Rivetti',descricao:'Follow-up lead — Bruno Rivetti',date:'2026-04-16',status:'Pendente'},
+    {id:525,tipo:'Ligação',cliente:'Máiron',descricao:'Follow-up lead — Máiron',date:'2026-04-16',status:'Pendente'},
+    {id:526,tipo:'Ligação',cliente:'Diego Carriel',descricao:'Follow-up lead — Diego Carriel',date:'2026-04-16',status:'Pendente'},
+    {id:527,tipo:'Ligação',cliente:'Renan Reisen',descricao:'Follow-up lead — Renan Reisen',date:'2026-04-16',status:'Pendente'},
+    {id:528,tipo:'Ligação',cliente:'Matheus Correa',descricao:'Follow-up lead — Matheus Correa',date:'2026-04-16',status:'Pendente'},
+    {id:529,tipo:'Ligação',cliente:'Lucas Paludo',descricao:'Follow-up lead — Lucas Paludo',date:'2026-04-16',status:'Pendente'},
+    {id:530,tipo:'Ligação',cliente:'Roberto Aguiar JR',descricao:'Follow-up lead — Roberto Aguiar JR',date:'2026-04-16',status:'Pendente'},
+    {id:531,tipo:'Ligação',cliente:'Thiago',descricao:'Follow-up lead — Thiago',date:'2026-04-16',status:'Pendente'},
+    {id:532,tipo:'Ligação',cliente:'Wadis',descricao:'Follow-up lead — Wadis',date:'2026-04-17',status:'Pendente'},
+    {id:533,tipo:'Ligação',cliente:'ANTONIO AQUINO NETO',descricao:'Follow-up lead — ANTONIO AQUINO NETO',date:'2026-04-17',status:'Pendente'},
+    {id:534,tipo:'Ligação',cliente:'Guilherme Bressan',descricao:'Follow-up lead — Guilherme Bressan',date:'2026-04-17',status:'Pendente'},
+    {id:535,tipo:'Ligação',cliente:'Clovis Mezzari',descricao:'Follow-up lead — Clovis Mezzari',date:'2026-04-17',status:'Pendente'},
+    {id:536,tipo:'Ligação',cliente:'João Ricardo',descricao:'Follow-up lead — João Ricardo',date:'2026-04-17',status:'Pendente'},
+    {id:537,tipo:'Ligação',cliente:'Daniel tellicojus',descricao:'Follow-up lead — Daniel tellicojus',date:'2026-04-17',status:'Pendente'},
+    {id:538,tipo:'Ligação',cliente:'Manuel',descricao:'Follow-up lead — Manuel',date:'2026-04-17',status:'Pendente'},
+    {id:539,tipo:'Ligação',cliente:'William Rodrigues',descricao:'Follow-up lead — William Rodrigues',date:'2026-04-17',status:'Pendente'},
+    {id:540,tipo:'Ligação',cliente:'Carlos Jorge',descricao:'Follow-up lead — Carlos Jorge',date:'2026-04-17',status:'Pendente'},
+    {id:541,tipo:'Ligação',cliente:'Gabriel Baron',descricao:'Follow-up lead — Gabriel Baron',date:'2026-04-17',status:'Pendente'},
+    {id:542,tipo:'Ligação',cliente:'Thiffany Veiga',descricao:'Follow-up lead — Thiffany Veiga',date:'2026-04-17',status:'Pendente'},
+    {id:543,tipo:'Ligação',cliente:'Daniel Adv Tributarista',descricao:'Follow-up lead — Daniel Adv Tributarista',date:'2026-04-17',status:'Pendente'},
+    {id:544,tipo:'Ligação',cliente:'vinicius tellicojus',descricao:'Follow-up lead — vinicius tellicojus',date:'2026-04-17',status:'Pendente'},
+    {id:545,tipo:'Ligação',cliente:'Igor Inovar',descricao:'Follow-up lead — Igor Inovar',date:'2026-04-17',status:'Pendente'},
+    {id:546,tipo:'Ligação',cliente:'Hideraldo Henrique',descricao:'Follow-up lead — Hideraldo Henrique',date:'2026-04-17',status:'Pendente'},
+    {id:547,tipo:'Ligação',cliente:'Carlos San Carlos',descricao:'Follow-up lead — Carlos San Carlos',date:'2026-04-17',status:'Pendente'},
+    {id:548,tipo:'Ligação',cliente:'Pedro Raja',descricao:'Follow-up lead — Pedro Raja',date:'2026-04-20',status:'Pendente'},
+    {id:549,tipo:'Ligação',cliente:'Paulo',descricao:'Follow-up lead — Paulo',date:'2026-04-20',status:'Pendente'},
+    {id:550,tipo:'Ligação',cliente:'Vinícius Barquete',descricao:'Follow-up lead — Vinícius Barquete',date:'2026-04-20',status:'Pendente'},
+    {id:551,tipo:'Ligação',cliente:'Tobias',descricao:'Follow-up lead — Tobias',date:'2026-04-20',status:'Pendente'},
+    {id:552,tipo:'Ligação',cliente:'Iuri Castro',descricao:'Follow-up lead — Iuri Castro',date:'2026-04-20',status:'Pendente'},
+    {id:553,tipo:'Ligação',cliente:'Caio Carvalho',descricao:'Follow-up lead — Caio Carvalho',date:'2026-04-20',status:'Pendente'},
+    {id:554,tipo:'Ligação',cliente:'Caio Assis',descricao:'Follow-up lead — Caio Assis',date:'2026-04-20',status:'Pendente'},
+    {id:555,tipo:'Ligação',cliente:'Helio',descricao:'Follow-up lead — Helio',date:'2026-04-20',status:'Pendente'},
+    {id:556,tipo:'Ligação',cliente:'Renato Oliveira',descricao:'Follow-up lead — Renato Oliveira',date:'2026-04-20',status:'Pendente'},
+    {id:557,tipo:'Ligação',cliente:'André Dilica',descricao:'Follow-up lead — André Dilica',date:'2026-04-20',status:'Pendente'},
+    {id:558,tipo:'Ligação',cliente:'Ivo Castanheira',descricao:'Follow-up lead — Ivo Castanheira',date:'2026-04-20',status:'Pendente'},
+    {id:559,tipo:'Ligação',cliente:'Carol Lagoa',descricao:'Follow-up lead — Carol Lagoa',date:'2026-04-20',status:'Pendente'},
+    {id:560,tipo:'Ligação',cliente:'ANTONIO ROBERTO GUEDIN',descricao:'Follow-up lead — ANTONIO ROBERTO GUEDIN',date:'2026-04-20',status:'Pendente'},
+    {id:561,tipo:'Ligação',cliente:'Jefferson BH',descricao:'Follow-up lead — Jefferson BH',date:'2026-04-20',status:'Pendente'},
+    {id:562,tipo:'Ligação',cliente:'Marcio Rodrigues',descricao:'Follow-up lead — Marcio Rodrigues',date:'2026-04-20',status:'Pendente'},
+    {id:563,tipo:'Ligação',cliente:'Cintia Financeiro',descricao:'Follow-up lead — Cintia Financeiro',date:'2026-04-20',status:'Pendente'},
+    {id:564,tipo:'Ligação',cliente:'Bruno Marva',descricao:'Follow-up lead — Bruno Marva',date:'2026-04-22',status:'Pendente'},
+    {id:565,tipo:'Ligação',cliente:'Vitor Dal Pont Savi',descricao:'Follow-up lead — Vitor Dal Pont Savi',date:'2026-04-22',status:'Pendente'},
+    {id:566,tipo:'Ligação',cliente:'Joel Silva',descricao:'Follow-up lead — Joel Silva',date:'2026-04-22',status:'Pendente'},
+    {id:567,tipo:'Ligação',cliente:'Bartira Netto',descricao:'Follow-up lead — Bartira Netto',date:'2026-04-22',status:'Pendente'},
+    {id:568,tipo:'Ligação',cliente:'Gaucho CS',descricao:'Follow-up lead — Gaucho CS',date:'2026-04-22',status:'Pendente'},
+    {id:569,tipo:'Ligação',cliente:'Bruno Audio sistem',descricao:'Follow-up lead — Bruno Audio sistem',date:'2026-04-22',status:'Pendente'},
+    {id:570,tipo:'Ligação',cliente:'Pedro Blotta',descricao:'Follow-up lead — Pedro Blotta',date:'2026-04-22',status:'Pendente'},
+    {id:571,tipo:'Ligação',cliente:'Rodrigo Cabral',descricao:'Follow-up lead — Rodrigo Cabral',date:'2026-04-22',status:'Pendente'},
+    {id:572,tipo:'Ligação',cliente:'João Candido',descricao:'Follow-up lead — João Candido',date:'2026-04-22',status:'Pendente'},
+    {id:573,tipo:'Ligação',cliente:'Manoel Sezinando',descricao:'Follow-up lead — Manoel Sezinando',date:'2026-04-22',status:'Pendente'},
+    {id:574,tipo:'Ligação',cliente:'Raphael Turquet',descricao:'Follow-up lead — Raphael Turquet',date:'2026-04-22',status:'Pendente'},
+    {id:575,tipo:'Ligação',cliente:'Alvaro',descricao:'Follow-up lead — Alvaro',date:'2026-04-22',status:'Pendente'},
+    {id:576,tipo:'Ligação',cliente:'Fernando Correa',descricao:'Follow-up lead — Fernando Correa',date:'2026-04-22',status:'Pendente'},
+    {id:577,tipo:'Ligação',cliente:'Vinicius Silva',descricao:'Follow-up lead — Vinicius Silva',date:'2026-04-22',status:'Pendente'},
+    {id:578,tipo:'Ligação',cliente:'Vitor Paiva',descricao:'Follow-up lead — Vitor Paiva',date:'2026-04-22',status:'Pendente'},
+    {id:579,tipo:'Ligação',cliente:'Joe Maciel',descricao:'Follow-up lead — Joe Maciel',date:'2026-04-22',status:'Pendente'},
+    {id:580,tipo:'Ligação',cliente:'Raul Campos',descricao:'Follow-up lead — Raul Campos',date:'2026-04-23',status:'Pendente'},
+    {id:581,tipo:'Ligação',cliente:'Pedro Temponi',descricao:'Follow-up lead — Pedro Temponi',date:'2026-04-23',status:'Pendente'},
+    {id:582,tipo:'Ligação',cliente:'José Victor',descricao:'Follow-up lead — José Victor',date:'2026-04-23',status:'Pendente'},
+    {id:583,tipo:'Ligação',cliente:'Mario Ritondo',descricao:'Follow-up lead — Mario Ritondo',date:'2026-04-23',status:'Pendente'},
+    {id:584,tipo:'Ligação',cliente:'Guilherme da Beth',descricao:'Follow-up lead — Guilherme da Beth',date:'2026-04-23',status:'Pendente'},
+    {id:585,tipo:'Ligação',cliente:'Fabio prefeito Igarating',descricao:'Follow-up lead — Fabio prefeito Igarating',date:'2026-04-23',status:'Pendente'},
+    {id:586,tipo:'Ligação',cliente:'Osvaldo Assunção',descricao:'Follow-up lead — Osvaldo Assunção',date:'2026-04-23',status:'Pendente'},
+    {id:587,tipo:'Ligação',cliente:'Colfac',descricao:'Follow-up lead — Colfac',date:'2026-04-23',status:'Pendente'},
+    {id:588,tipo:'Ligação',cliente:'Feaduaneiros',descricao:'Follow-up lead — Feaduaneiros',date:'2026-04-23',status:'Pendente'},
+    {id:589,tipo:'Ligação',cliente:'Intermodal South America',descricao:'Follow-up lead — Intermodal South America',date:'2026-04-23',status:'Pendente'},
+    {id:590,tipo:'Ligação',cliente:'Alessandro Di Giuseppe',descricao:'Follow-up lead — Alessandro Di Giuseppe',date:'2026-04-23',status:'Pendente'},
+    {id:591,tipo:'Ligação',cliente:'Secovi',descricao:'Follow-up lead — Secovi',date:'2026-04-23',status:'Pendente'},
+    {id:592,tipo:'Ligação',cliente:'Adil Bastos',descricao:'Follow-up lead — Adil Bastos',date:'2026-04-23',status:'Pendente'},
+    {id:593,tipo:'Ligação',cliente:'Celina Schelemper',descricao:'Follow-up lead — Celina Schelemper',date:'2026-04-23',status:'Pendente'},
+    {id:594,tipo:'Ligação',cliente:'Leonardo Maciel',descricao:'Follow-up lead — Leonardo Maciel',date:'2026-04-23',status:'Pendente'},
+    {id:595,tipo:'Ligação',cliente:'Marcelo Brito',descricao:'Follow-up lead — Marcelo Brito',date:'2026-04-23',status:'Pendente'},
+    {id:596,tipo:'Ligação',cliente:'Paulo (Deus é fiel)',descricao:'Follow-up lead — Paulo (Deus é fiel)',date:'2026-04-24',status:'Pendente'},
+    {id:597,tipo:'Ligação',cliente:'João Victor Junqueira',descricao:'Follow-up lead — João Victor Junqueira',date:'2026-04-24',status:'Pendente'},
+    {id:598,tipo:'Ligação',cliente:'Leo Oliveira',descricao:'Follow-up lead — Leo Oliveira',date:'2026-04-24',status:'Pendente'},
+    {id:599,tipo:'Ligação',cliente:'Henrique Lacerda',descricao:'Follow-up lead — Henrique Lacerda',date:'2026-04-24',status:'Pendente'},
+    {id:600,tipo:'Ligação',cliente:'Vitor Tagliavini',descricao:'Follow-up lead — Vitor Tagliavini',date:'2026-04-24',status:'Pendente'},
+    {id:601,tipo:'Ligação',cliente:'Alex Cortezia',descricao:'Follow-up lead — Alex Cortezia',date:'2026-04-24',status:'Pendente'},
+    {id:602,tipo:'Ligação',cliente:'Cristiane',descricao:'Follow-up lead — Cristiane',date:'2026-04-24',status:'Pendente'},
+    {id:603,tipo:'Ligação',cliente:'Gilnei',descricao:'Follow-up lead — Gilnei',date:'2026-04-24',status:'Pendente'},
+    {id:604,tipo:'Ligação',cliente:'Julcimar',descricao:'Follow-up lead — Julcimar',date:'2026-04-24',status:'Pendente'},
+    {id:605,tipo:'Ligação',cliente:'Alex Novello',descricao:'Follow-up lead — Alex Novello',date:'2026-04-24',status:'Pendente'},
+    {id:606,tipo:'Ligação',cliente:'Igor Metz',descricao:'Follow-up lead — Igor Metz',date:'2026-04-24',status:'Pendente'},
+    {id:607,tipo:'Ligação',cliente:'Bruno Barros',descricao:'Follow-up lead — Bruno Barros',date:'2026-04-24',status:'Pendente'},
+    {id:608,tipo:'Ligação',cliente:'Fernando Junior Albuquerque',descricao:'Follow-up lead — Fernando Junior Albuquerque',date:'2026-04-24',status:'Pendente'},
+    {id:609,tipo:'Ligação',cliente:'Alexandre Gonzaga',descricao:'Follow-up lead — Alexandre Gonzaga',date:'2026-04-24',status:'Pendente'},
+    {id:610,tipo:'Ligação',cliente:'Edson IMK',descricao:'Follow-up lead — Edson IMK',date:'2026-04-24',status:'Pendente'},
+    {id:611,tipo:'Ligação',cliente:'Cristiano Valadres',descricao:'Follow-up lead — Cristiano Valadres',date:'2026-04-24',status:'Pendente'},
+    {id:612,tipo:'Ligação',cliente:'Carlos Victor',descricao:'Follow-up lead — Carlos Victor',date:'2026-04-27',status:'Pendente'},
+    {id:613,tipo:'Ligação',cliente:'Fecomercio SC',descricao:'Follow-up lead — Fecomercio SC',date:'2026-04-27',status:'Pendente'},
+    {id:614,tipo:'Ligação',cliente:'Jonatas Granieri',descricao:'Follow-up lead — Jonatas Granieri',date:'2026-04-27',status:'Pendente'},
+    {id:615,tipo:'Ligação',cliente:'Cassio Garcia',descricao:'Follow-up lead — Cassio Garcia',date:'2026-04-27',status:'Pendente'},
+    {id:616,tipo:'Ligação',cliente:'Thiago Dayrell',descricao:'Follow-up lead — Thiago Dayrell',date:'2026-04-27',status:'Pendente'},
+    {id:617,tipo:'Ligação',cliente:'Pedro Bilin',descricao:'Follow-up lead — Pedro Bilin',date:'2026-04-27',status:'Pendente'},
+    {id:618,tipo:'Ligação',cliente:'Higor Campos',descricao:'Follow-up lead — Higor Campos',date:'2026-04-27',status:'Pendente'},
+    {id:619,tipo:'Ligação',cliente:'Sergio Martins',descricao:'Follow-up lead — Sergio Martins',date:'2026-04-27',status:'Pendente'},
+    {id:620,tipo:'Ligação',cliente:'Marcelo Marques',descricao:'Follow-up lead — Marcelo Marques',date:'2026-04-27',status:'Pendente'},
+    {id:621,tipo:'Ligação',cliente:'Gilney (Amigo Fernando)',descricao:'Follow-up lead — Gilney (Amigo Fernando)',date:'2026-04-27',status:'Pendente'},
+    {id:622,tipo:'Ligação',cliente:'Leonardo Cordeiro',descricao:'Follow-up lead — Leonardo Cordeiro',date:'2026-04-27',status:'Pendente'},
+    {id:623,tipo:'Ligação',cliente:'Thiago Barros',descricao:'Follow-up lead — Thiago Barros',date:'2026-04-27',status:'Pendente'},
+    {id:624,tipo:'Ligação',cliente:'Ivan Mendes',descricao:'Follow-up lead — Ivan Mendes',date:'2026-04-27',status:'Pendente'},
+    {id:625,tipo:'Ligação',cliente:'Ale Girotto',descricao:'Follow-up lead — Ale Girotto',date:'2026-04-27',status:'Pendente'},
+    {id:626,tipo:'Ligação',cliente:'Sinclair Philips',descricao:'Follow-up lead — Sinclair Philips',date:'2026-04-27',status:'Pendente'},
+    {id:627,tipo:'Ligação',cliente:'Felipe Monteiro',descricao:'Follow-up lead — Felipe Monteiro',date:'2026-04-27',status:'Pendente'},
+    {id:628,tipo:'Ligação',cliente:'Rodrigo Assunção',descricao:'Follow-up lead — Rodrigo Assunção',date:'2026-04-28',status:'Pendente'},
+    {id:629,tipo:'Ligação',cliente:'Gabriel Pimenta',descricao:'Follow-up lead — Gabriel Pimenta',date:'2026-04-28',status:'Pendente'},
+    {id:630,tipo:'Ligação',cliente:'Guilherme Eduardo',descricao:'Follow-up lead — Guilherme Eduardo',date:'2026-04-28',status:'Pendente'},
+    {id:631,tipo:'Ligação',cliente:'Olavo Bronzato',descricao:'Follow-up lead — Olavo Bronzato',date:'2026-04-28',status:'Pendente'},
+    {id:632,tipo:'Ligação',cliente:'Valéria Valadares',descricao:'Follow-up lead — Valéria Valadares',date:'2026-04-28',status:'Pendente'},
+    {id:633,tipo:'Ligação',cliente:'Marcus Tvs',descricao:'Follow-up lead — Marcus Tvs',date:'2026-04-28',status:'Pendente'},
+    {id:634,tipo:'Ligação',cliente:'Breno de Andrade',descricao:'Follow-up lead — Breno de Andrade',date:'2026-04-28',status:'Pendente'},
+    {id:635,tipo:'Ligação',cliente:'Alan Mosko',descricao:'Follow-up lead — Alan Mosko',date:'2026-04-28',status:'Pendente'},
+    {id:636,tipo:'Ligação',cliente:'Glauco Hobby',descricao:'Follow-up lead — Glauco Hobby',date:'2026-04-28',status:'Pendente'},
+    {id:637,tipo:'Ligação',cliente:'Felipe Doneda',descricao:'Follow-up lead — Felipe Doneda',date:'2026-04-28',status:'Pendente'},
+    {id:638,tipo:'Ligação',cliente:'Crisipo Valadares',descricao:'Follow-up lead — Crisipo Valadares',date:'2026-04-28',status:'Pendente'},
+    {id:639,tipo:'Ligação',cliente:'Luan Augusto',descricao:'Follow-up lead — Luan Augusto',date:'2026-04-28',status:'Pendente'},
+    {id:640,tipo:'Ligação',cliente:'Matheus Candido',descricao:'Follow-up lead — Matheus Candido',date:'2026-04-28',status:'Pendente'},
+    {id:641,tipo:'Ligação',cliente:'Gustavo Valadares',descricao:'Follow-up lead — Gustavo Valadares',date:'2026-04-28',status:'Pendente'},
+    {id:642,tipo:'Ligação',cliente:'Matheus Freire',descricao:'Follow-up lead — Matheus Freire',date:'2026-04-28',status:'Pendente'},
+    {id:643,tipo:'Ligação',cliente:'Leal Monteiro',descricao:'Follow-up lead — Leal Monteiro',date:'2026-04-28',status:'Pendente'},
+    {id:644,tipo:'Ligação',cliente:'Paulo Gomide',descricao:'Follow-up lead — Paulo Gomide',date:'2026-04-29',status:'Pendente'},
+    {id:645,tipo:'Ligação',cliente:'João Minsian',descricao:'Follow-up lead — João Minsian',date:'2026-04-29',status:'Pendente'},
+    {id:646,tipo:'Ligação',cliente:'Hiper Textil',descricao:'Follow-up lead — Hiper Textil',date:'2026-04-29',status:'Pendente'},
+    {id:647,tipo:'Ligação',cliente:'Guilherme Chaves',descricao:'Follow-up lead — Guilherme Chaves',date:'2026-04-29',status:'Pendente'},
+    {id:648,tipo:'Ligação',cliente:'Leonardo Fernandes',descricao:'Follow-up lead — Leonardo Fernandes',date:'2026-04-29',status:'Pendente'},
+    {id:649,tipo:'Ligação',cliente:'Victor Martins',descricao:'Follow-up lead — Victor Martins',date:'2026-04-29',status:'Pendente'},
+    {id:650,tipo:'Ligação',cliente:'Antonio Augusto Golinelli',descricao:'Follow-up lead — Antonio Augusto Golinelli',date:'2026-04-29',status:'Pendente'},
+    {id:651,tipo:'Ligação',cliente:'Tiago Carnaval',descricao:'Follow-up lead — Tiago Carnaval',date:'2026-04-29',status:'Pendente'},
+    {id:652,tipo:'Ligação',cliente:'Guilherme Marques',descricao:'Follow-up lead — Guilherme Marques',date:'2026-04-29',status:'Pendente'},
+    {id:653,tipo:'Ligação',cliente:'Lucas Morais',descricao:'Follow-up lead — Lucas Morais',date:'2026-04-29',status:'Pendente'},
+    {id:654,tipo:'Ligação',cliente:'Thiago Telles',descricao:'Follow-up lead — Thiago Telles',date:'2026-04-29',status:'Pendente'},
+    {id:655,tipo:'Ligação',cliente:'Pethrus Guanhães',descricao:'Follow-up lead — Pethrus Guanhães',date:'2026-04-29',status:'Pendente'},
+    {id:656,tipo:'Ligação',cliente:'MARCO AURELIO PERICO',descricao:'Follow-up lead — MARCO AURELIO PERICO',date:'2026-04-29',status:'Pendente'},
+    {id:657,tipo:'Ligação',cliente:'Dieik (João Minsian)',descricao:'Follow-up lead — Dieik (João Minsian)',date:'2026-04-29',status:'Pendente'},
+    {id:658,tipo:'Ligação',cliente:'JOAO ALBERTO FRIESTINO',descricao:'Follow-up lead — JOAO ALBERTO FRIESTINO',date:'2026-04-29',status:'Pendente'},
+    {id:659,tipo:'Ligação',cliente:'ANTONIO CARLOS VARGAS FILHO',descricao:'Follow-up lead — ANTONIO CARLOS VARGAS FILHO',date:'2026-04-29',status:'Pendente'},
+    {id:660,tipo:'Ligação',cliente:'Natan',descricao:'Follow-up lead — Natan',date:'2026-04-30',status:'Pendente'},
+    {id:661,tipo:'Ligação',cliente:'Mario Campos',descricao:'Follow-up lead — Mario Campos',date:'2026-04-30',status:'Pendente'},
+    {id:662,tipo:'Ligação',cliente:'Lucas Sousa',descricao:'Follow-up lead — Lucas Sousa',date:'2026-04-30',status:'Pendente'},
+    {id:663,tipo:'Ligação',cliente:'Allan Ramires',descricao:'Follow-up lead — Allan Ramires',date:'2026-04-30',status:'Pendente'},
+    {id:664,tipo:'Ligação',cliente:'Bortoluzzi',descricao:'Follow-up lead — Bortoluzzi',date:'2026-04-30',status:'Pendente'},
+    {id:665,tipo:'Ligação',cliente:'Valdir',descricao:'Follow-up lead — Valdir',date:'2026-04-30',status:'Pendente'},
+    {id:666,tipo:'Ligação',cliente:'Emerson Faria',descricao:'Follow-up lead — Emerson Faria',date:'2026-04-30',status:'Pendente'},
+    {id:667,tipo:'Ligação',cliente:'Marcelo Soares',descricao:'Follow-up lead — Marcelo Soares',date:'2026-04-30',status:'Pendente'},
+    {id:668,tipo:'Ligação',cliente:'Thalles Santos',descricao:'Follow-up lead — Thalles Santos',date:'2026-04-30',status:'Pendente'},
+    {id:669,tipo:'Ligação',cliente:'Kleber Alves',descricao:'Follow-up lead — Kleber Alves',date:'2026-04-30',status:'Pendente'},
+    {id:670,tipo:'Ligação',cliente:'José Jair',descricao:'Follow-up lead — José Jair',date:'2026-04-30',status:'Pendente'},
+    {id:671,tipo:'Ligação',cliente:'Gustavo Carvalho rink',descricao:'Follow-up lead — Gustavo Carvalho rink',date:'2026-04-30',status:'Pendente'},
+    {id:672,tipo:'Ligação',cliente:'Luis Fabio Martins',descricao:'Follow-up lead — Luis Fabio Martins',date:'2026-04-30',status:'Pendente'},
+    {id:673,tipo:'Ligação',cliente:'Guilherme Silva',descricao:'Follow-up lead — Guilherme Silva',date:'2026-04-30',status:'Pendente'},
+    {id:674,tipo:'Ligação',cliente:'Guilherme Vieira',descricao:'Follow-up lead — Guilherme Vieira',date:'2026-04-30',status:'Pendente'},
+    {id:675,tipo:'Ligação',cliente:'Colocar crédito celulares',descricao:'Follow-up lead — Colocar crédito celulares',date:'2026-04-30',status:'Pendente'}
+  ];
+SEED_TASKS = DB.tasks; DB.tasks=[];
+
+// ---- HELPERS ----
+function brl(v){if(!v&&v!==0)return'—';return'R$ '+Number(v).toLocaleString('pt-BR')}
+function fdate(d){if(!d)return'—';if(d.includes('-')){var p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0];}return d;}
+function ini2(n){return(n||'?').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase()}
+function sbadge(s){var m={Novo:'badge-blue','Em contato':'badge-amber',Qualificado:'badge-green',Proposta:'badge-amber',Descartado:'badge-gray',Realizado:'badge-green',Pendente:'badge-amber',Cancelado:'badge-red',Prospecção:'badge-gray',Qualificação:'badge-amber',Negociação:'badge-blue',Fechamento:'badge-green'};return'<span class="badge '+(m[s]||'badge-gray')+'">'+s+'</span>'}
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.style.opacity='1';setTimeout(()=>t.style.opacity='0',2500);}
+function setSyncStatus(msg){document.getElementById('sync-status').textContent=msg;}
+
+// ---- AUTH ----
+function switchAuthTab(tab,el){
+  document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-login').style.display=tab==='login'?'block':'none';
+  document.getElementById('tab-register').style.display=tab==='register'?'block':'none';
+  document.getElementById('auth-err').style.display='none';
+}
+
+async function doLogin(){
+  var email=document.getElementById('l-email').value.trim();
+  var pass=document.getElementById('l-pass').value;
+  if(!email||!pass){showAuthErr('Preencha email e senha');return;}
+  var btn=event.target; btn.textContent='Entrando...'; btn.disabled=true;
+  var {error}=await sb.auth.signInWithPassword({email,password:pass});
+  btn.textContent='Entrar'; btn.disabled=false;
+  if(error){showAuthErr(error.message);return;}
+}
+
+async function doRegister(){
+  var nome=document.getElementById('r-nome').value.trim();
+  var email=document.getElementById('r-email').value.trim();
+  var pass=document.getElementById('r-pass').value;
+  if(!nome||!email||!pass){showAuthErr('Preencha todos os campos');return;}
+  var btn=event.target; btn.textContent='Criando...'; btn.disabled=true;
+  var {error}=await sb.auth.signUp({email,password:pass,options:{data:{nome}}});
+  btn.textContent='Criar conta'; btn.disabled=false;
+  if(error){showAuthErr(error.message);return;}
+  showAuthErr('Conta criada! Verifique seu email para confirmar.','green');
+}
+
+function showAuthErr(msg,color){
+  var el=document.getElementById('auth-err');
+  el.textContent=msg;
+  el.style.display='block';
+  el.style.background=color==='green'?'var(--green-bg)':'var(--red-bg)';
+  el.style.color=color==='green'?'var(--green-text)':'var(--red-text)';
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  location.reload();
+}
+
+// ---- LISTEN AUTH STATE ----
+sb.auth.onAuthStateChange(async (event, session)=>{
+  if(session){
+    currentUser=session.user;
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('topbar').style.display='flex';
+    document.getElementById('shell').style.display='flex';
+    var nome=currentUser.user_metadata?.nome||currentUser.email.split('@')[0];
+    document.getElementById('top-username').textContent=nome;
+    document.getElementById('top-ava').textContent=ini2(nome);
+    await loadAllData();
+    rdash(); updBadge();
+  } else {
+    document.getElementById('auth-screen').style.display='flex';
+    document.getElementById('topbar').style.display='none';
+    document.getElementById('shell').style.display='none';
+  }
+});
+
+// ---- LOAD ALL DATA FROM SUPABASE ----
+async function loadAllData(){
+  setSyncStatus('⟳ Sincronizando...');
+  try{
+    var uid=currentUser.id;
+    var [c,l,o,t]=await Promise.all([
+      sb.from('clientes').select('*').eq('user_id',uid).order('created_at'),
+      sb.from('leads').select('*').eq('user_id',uid).order('created_at'),
+      sb.from('opps').select('*').eq('user_id',uid).order('created_at'),
+      sb.from('tasks').select('*').eq('user_id',uid).order('date')
+    ]);
+    DB.clientes=c.data||[];
+    DB.leads=l.data||[];
+    DB.opps=o.data||[];
+    DB.tasks=t.data||[];
+
+    // Se banco vazio, importa os dados do Leandro automaticamente
+    if(DB.clientes.length===0 && DB.tasks.length===0){
+      setSyncStatus('⟳ Importando dados iniciais...');
+      await seedInitialData();
+    }
+    setSyncStatus('✓ Sincronizado');
+    setTimeout(()=>setSyncStatus(''),3000);
+  }catch(e){
+    setSyncStatus('⚠ Erro de conexão');
+    console.error(e);
+  }
+}
+
+async function seedInitialData(){
+  var uid=currentUser.id;
+  // Seed clientes em batches de 50
+  for(var i=0;i<SEED_CLIENTES.length;i+=50){
+    var batch=SEED_CLIENTES.slice(i,i+50).map(c=>({...c,id:undefined,user_id:uid}));
+    await sb.from('clientes').insert(batch);
+  }
+  // Seed leads em batches de 50
+  for(var i=0;i<SEED_LEADS.length;i+=50){
+    var batch=SEED_LEADS.slice(i,i+50).map(l=>({...l,id:undefined,user_id:uid}));
+    await sb.from('leads').insert(batch);
+  }
+  // Seed tasks em batches de 50
+  for(var i=0;i<SEED_TASKS.length;i+=50){
+    var batch=SEED_TASKS.slice(i,i+50).map(t=>({...t,id:undefined,user_id:uid,descricao:t.descricaoricao}));
+    await sb.from('tasks').insert(batch);
+  }
+  await loadAllData();
+}
+
+// ---- NAV ----
+function go(pg,el){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(el)el.classList.add('active');
+  else{var x=document.querySelector('[data-pg="'+pg+'"]');if(x)x.classList.add('active');}
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
+  document.getElementById('pg-'+pg).classList.add('active');
+  prevPg=curPg; curPg=pg;
+  if(pg==='dashboard')rdash();
+  else if(pg==='clientes')renderClientes();
+  else if(pg==='leads')renderLeads();
+  else if(pg==='pipeline'){renderKanban();renderPipeLista();renderPipeGraf();}
+  else if(pg==='atividades')renderActs();
+  else if(pg==='relatorios')renderRep();
+}
+function goBack(){go(prevPg,null);}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(e,id){if(!e||e.target===document.getElementById(id))document.getElementById(id).classList.remove('open');}
+function setTabA(el,val){
+  document.querySelectorAll('#pg-atividades .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active'); CF.acts=val; renderActs();
+}
+
+// ---- DASHBOARD ----
+function rdash(){
+  var now=new Date();
+  document.getElementById('dash-date').textContent=now.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  var aum=DB.clientes.reduce((s,c)=>s+(Number(c.pat)||0),0);
+  var pipe=DB.opps.reduce((s,o)=>s+(Number(o.val)||0),0);
+  document.getElementById('m-cli').textContent=DB.clientes.length;
+  document.getElementById('m-lds').textContent=DB.leads.length;
+  document.getElementById('m-aum').textContent=brl(aum);
+  document.getElementById('m-pipe').textContent=brl(pipe);
+  var stages=['Prospecção','Qualificação','Proposta','Negociação','Fechamento'];
+  var colors=['#B5D4F4','#85B7EB','#378ADD','#185FA5','#0A5FC4'];
+  var maxV=Math.max(...stages.map(s=>DB.opps.filter(o=>o.estagio===s).reduce((t,o)=>t+(Number(o.val)||0),0)),1);
+  var ph=stages.map((s,i)=>{
+    var cnt=DB.opps.filter(o=>o.estagio===s).length;
+    var val=DB.opps.filter(o=>o.estagio===s).reduce((t,o)=>t+(Number(o.val)||0),0);
+    var pct=Math.round(val/maxV*100);
+    return`<div class="pipe-row"><div class="pipe-label">${s}</div><div class="pipe-track"><div class="pipe-fill" style="width:${Math.max(pct,8)}%;background:${colors[i]}">${cnt}</div></div><div class="pipe-amount">${brl(val)}</div></div>`;
+  }).join('');
+  document.getElementById('d-pipe').innerHTML=ph||'<div class="empty">Sem oportunidades</div>';
+  var icons={Reunião:'📅',Ligação:'📞',Email:'✉',Tarefa:'✓',WhatsApp:'💬'};
+  var ah=DB.tasks.slice(-4).reverse().map(a=>`<div class="act-item"><div class="act-icon">${icons[a.tipo]||'·'}</div><div class="act-body"><div class="act-title">${a.cliente||a.descricao}</div><div class="act-meta">${a.tipo} — ${fdate(a.date)}</div></div>${sbadge(a.status)}</div>`).join('');
+  document.getElementById('d-acts').innerHTML=ah||'<div class="empty">Sem atividades</div>';
+  var pend=DB.tasks.filter(t=>t.status==='Pendente').slice(0,5);
+  var th=pend.map(t=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><div><div style="font-weight:500">${t.descricao||t.cliente}</div><div style="color:var(--text3);font-size:11px;margin-top:2px">${t.cliente||''} — ${fdate(t.date)}</div></div>${sbadge(t.status)}</div>`).join('');
+  document.getElementById('d-tasks').innerHTML=th||'<div class="empty">Sem pendências</div>';
+  updBadge();
+}
+
+// ---- CLIENTES ----
+function renderClientes(){
+  var q=(document.getElementById('q-cli').value||'').toLowerCase();
+  var seg=document.getElementById('f-seg').value;
+  var data=DB.clientes.filter(c=>(!q||c.nome.toLowerCase().includes(q))&&(!seg||c.seg===seg));
+  var h=data.length?data.map(c=>`<tr class="row" onclick="showProf('c',${c.id})"><td><div style="display:flex;align-items:center;gap:10px"><div class="ava ava-blue">${ini2(c.nome)}</div><span style="font-weight:500">${c.nome}</span></div></td><td><span class="badge badge-gray">${c.seg||'—'}</span></td><td>${brl(c.pat)}</td><td style="color:var(--text3);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.prod||'—'}</td><td style="color:var(--text3)">${fdate(c.date)}</td><td style="color:var(--text3);font-size:16px">›</td></tr>`).join(''):`<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--text3)">Nenhum cliente encontrado</td></tr>`;
+  document.getElementById('tb-cli').innerHTML=h;
+}
+
+// ---- LEADS ----
+function renderLeads(){
+  var q=(document.getElementById('q-ld').value||'').toLowerCase();
+  var orig=document.getElementById('f-orig').value;
+  var st=document.getElementById('f-stld').value;
+  var data=DB.leads.filter(l=>(!q||l.nome.toLowerCase().includes(q)||(l.empresa||'').toLowerCase().includes(q))&&(!orig||l.prod===orig)&&(!st||l.status===st));
+  var h=data.length?data.map(l=>`<tr class="row" onclick="showProf('l',${l.id})"><td><div style="display:flex;align-items:center;gap:10px"><div class="ava ava-amber">${ini2(l.nome)}</div><span style="font-weight:500">${l.nome}</span></div></td><td style="color:var(--text3)">${l.empresa||'—'}</td><td><span class="badge badge-gray">${l.prod||'—'}</span></td><td style="color:var(--text3)">${l.phone||'—'}</td><td style="color:var(--text3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l.obs||'—'}</td><td style="color:var(--text3)">${fdate(l.date)}</td><td style="color:var(--text3)">${fdate(l.proximo)}</td><td style="color:var(--text3);font-size:16px">›</td></tr>`).join(''):`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text3)">Nenhum lead encontrado</td></tr>`;
+  document.getElementById('tb-ld').innerHTML=h;
+}
+
+// ---- PIPELINE ----
+function renderKanban(){
+  var stages=['Prospecção','Qualificação','Proposta','Negociação','Fechamento'];
+  var h='';
+  stages.forEach(s=>{
+    var items=DB.opps.filter(o=>o.estagio===s);
+    var tot=items.reduce((t,o)=>t+(Number(o.val)||0),0);
+    h+=`<div class="kcol"><div class="kcol-header">${s} <span class="kcol-count">${items.length}</span></div>`;
+    if(items.length)items.forEach(o=>{h+=`<div class="kcard"><div class="kcard-name">${o.nome}</div><div class="kcard-val">${brl(o.val)}</div><div class="kcard-foot"><span class="badge badge-gray" style="font-size:10px">${o.prod||''}</span>${fdate(o.date)}</div></div>`;}); 
+    else h+=`<div style="font-size:12px;color:var(--text3);text-align:center;padding:20px 0">Vazio</div>`;
+    if(tot)h+=`<div class="kcol-total">${brl(tot)}</div>`;
+    h+='</div>';
+  });
+  document.getElementById('pipe-kanban').innerHTML=`<div class="kanban">${h}</div>`;
+}
+function renderPipeLista(){
+  var h=`<div class="card" style="padding:0;overflow:hidden"><table><thead><tr><th>Oportunidade</th><th>Cliente</th><th>Estágio</th><th>Valor</th><th>Produto</th><th>Previsão</th></tr></thead><tbody>`;
+  if(!DB.opps.length)h+=`<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--text3)">Sem oportunidades</td></tr>`;
+  else DB.opps.forEach(o=>{h+=`<tr><td style="font-weight:500">${o.nome}</td><td>${o.cliente}</td><td>${sbadge(o.estagio)}</td><td>${brl(o.val)}</td><td style="color:var(--text3)">${o.prod||''}</td><td style="color:var(--text3)">${fdate(o.date)}</td></tr>`;});
+  h+='</tbody></table></div>';
+  document.getElementById('pipe-lista').innerHTML=h;
+}
+function renderPipeGraf(){
+  var stages=['Prospecção','Qualificação','Proposta','Negociação','Fechamento'];
+  var colors=['#B5D4F4','#85B7EB','#378ADD','#185FA5','#0A5FC4'];
+  var maxC=Math.max(...stages.map(s=>DB.opps.filter(o=>o.estagio===s).length),1);
+  var h=`<div class="card"><div class="card-title">Quantidade por estágio</div>`;
+  stages.forEach((s,i)=>{
+    var cnt=DB.opps.filter(o=>o.estagio===s).length;
+    var val=DB.opps.filter(o=>o.estagio===s).reduce((t,o)=>t+(Number(o.val)||0),0);
+    h+=`<div class="pipe-row"><div class="pipe-label">${s}</div><div class="pipe-track"><div class="pipe-fill" style="width:${Math.max(Math.round(cnt/maxC*100),8)}%;background:${colors[i]}">${cnt}</div></div><div class="pipe-amount">${brl(val)}</div></div>`;
+  });
+  h+='</div>';
+  document.getElementById('pipe-graf').innerHTML=h;
+}
+function switchPipe(view,el){
+  document.querySelectorAll('#pg-pipeline .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active'); pipeView=view;
+  document.getElementById('pipe-kanban').style.display=view==='kanban'?'block':'none';
+  document.getElementById('pipe-lista').style.display=view==='lista'?'block':'none';
+  document.getElementById('pipe-grafico').style.display=view==='grafico'?'block':'none';
+}
+
+// ---- ATIVIDADES ----
+function renderActs(){
+  var f=CF.acts, fst=document.getElementById('f-acst').value;
+  var fdt=document.getElementById('f-acdt')?document.getElementById('f-acdt').value:'';
+  var data=DB.tasks.filter(t=>(f==='todos'||t.tipo===f)&&(!fst||t.status===fst)&&(!fdt||t.date===fdt)).slice().sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  var icons={Reunião:'📅',Ligação:'📞',Email:'✉',Tarefa:'✓',WhatsApp:'💬'};
+  if(!data.length){document.getElementById('act-list').innerHTML='<div class="empty">Nenhuma atividade encontrada</div>';updBadge();return;}
+  var byDate={};
+  data.forEach(a=>{if(!byDate[a.date])byDate[a.date]=[];byDate[a.date].push(a);});
+  var h='';
+  Object.entries(byDate).forEach(([dt,items])=>{
+    var pendentes=items.filter(i=>i.status==='Pendente').length;
+    h+=`<div style="margin-bottom:20px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)"><span style="font-size:12px;font-weight:600;color:var(--text2)">${fdate(dt)}</span><span class="badge badge-gray" style="font-size:10px">${items.length} tarefas</span>${pendentes?`<span class="badge badge-amber" style="font-size:10px">${pendentes} pendentes</span>`:''}</div>`;
+    items.forEach(a=>{
+      var tag=a.descricao&&a.descricao.startsWith('Contato mensal')?'<span class="badge badge-blue" style="font-size:10px;margin-left:6px">Cliente</span>':a.descricao&&a.descricao.startsWith('Follow-up lead')?'<span class="badge badge-amber" style="font-size:10px;margin-left:6px">Lead</span>':'';
+      h+=`<div class="act-item"><div class="act-icon">${icons[a.tipo]||'·'}</div><div class="act-body"><div class="act-title">${a.cliente||a.descricao}${tag}</div><div class="act-meta">${a.tipo} — ${fdate(a.date)}</div></div><div style="display:flex;align-items:center;gap:6px">${sbadge(a.status)}<button class="btn btn-sm" onclick="markDone(${a.id},this)" style="font-size:10px;height:22px;padding:0 8px">${a.status==='Realizado'?'↩ Reabrir':'✓ Feito'}</button></div></div>`;
+    });
+    h+='</div>';
+  });
+  document.getElementById('act-list').innerHTML=h;
+  updBadge();
+}
+function updBadge(){
+  var n=DB.tasks.filter(t=>t.status==='Pendente').length;
+  var b=document.getElementById('badge-pend');
+  b.textContent=n; b.style.display=n?'':'none';
+}
+
+// ---- RELATÓRIOS ----
+function renderRep(){
+  var origs={};
+  DB.leads.forEach(l=>{origs[l.prod]=(origs[l.prod]||0)+1;});
+  var oh=Object.entries(origs).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([k,v])=>{
+    var pct=DB.leads.length?Math.round(v/DB.leads.length*100):0;
+    return`<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px"><span>${k||'—'}</span><span style="color:var(--text3)">${v} (${pct}%)</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div></div>`;
+  }).join('');
+  document.getElementById('rep-orig').innerHTML=oh||'<div class="empty">Sem dados</div>';
+  var stages=['Prospecção','Qualificação','Proposta','Negociação','Fechamento'];
+  var fh=stages.map(s=>{
+    var cnt=DB.opps.filter(o=>o.estagio===s).length;
+    var val=DB.opps.filter(o=>o.estagio===s).reduce((t,o)=>t+(Number(o.val)||0),0);
+    var pct=DB.opps.length?Math.round(cnt/DB.opps.length*100):0;
+    return`<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px"><span>${s}</span><span style="color:var(--text3)">${cnt} opp · ${brl(val)}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div></div>`;
+  }).join('');
+  document.getElementById('rep-funil').innerHTML=fh;
+  var tAUM=DB.clientes.reduce((s,c)=>s+(Number(c.pat)||0),0);
+  var tPot=DB.leads.reduce((s,l)=>s+(Number(l.pot)||0),0);
+  var tPipe=DB.opps.reduce((s,o)=>s+(Number(o.val)||0),0);
+  var pend=DB.tasks.filter(t=>t.status==='Pendente').length;
+  document.getElementById('rep-exec').innerHTML=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px"><div class="metric"><div class="metric-label">AUM sob gestão</div><div class="metric-value" style="font-size:15px">${brl(tAUM)}</div></div><div class="metric"><div class="metric-label">Potencial leads</div><div class="metric-value" style="font-size:15px">${brl(tPot)}</div></div><div class="metric"><div class="metric-label">Pipeline aberto</div><div class="metric-value" style="font-size:15px">${brl(tPipe)}</div></div><div class="metric"><div class="metric-label">Tarefas pendentes</div><div class="metric-value">${pend}</div></div></div>`;
+}
+
+// ---- PROFILE ----
+function showProf(type,id){
+  var item=type==='c'?DB.clientes.find(c=>c.id===id):DB.leads.find(l=>l.id===id);
+  if(!item)return;
+  profData=item;
+  document.getElementById('pr-ava').textContent=ini2(item.nome);
+  document.getElementById('pr-name').textContent=item.nome;
+  document.getElementById('pr-sub').textContent=type==='c'?'Cliente · '+(item.seg||''):'Lead · '+(item.empresa||'Pessoa física');
+  document.getElementById('pr-email').textContent=item.email||'—';
+  document.getElementById('pr-phone').textContent=item.phone||'—';
+  document.getElementById('pr-pat').textContent=brl(item.pat||item.pot);
+  document.getElementById('pr-seg').textContent=item.seg||item.prod||'—';
+  document.getElementById('pr-prod').textContent=item.prod||'—';
+  document.getElementById('pr-obs').textContent=item.obs||'—';
+  document.getElementById('pr-empresa').textContent=item.empresa||'—';
+  var bx=type==='c'?'<span class="badge badge-gray">'+(item.seg||'')+'</span>':sbadge(item.status||'Novo')+' <span class="badge badge-gray">'+(item.prod||item.orig||'—')+'</span>';
+  document.getElementById('pr-badges').innerHTML=bx;
+  var acts=DB.tasks.filter(t=>t.cliente===item.nome);
+  var icons={Reunião:'📅',Ligação:'📞',Email:'✉',Tarefa:'✓',WhatsApp:'💬'};
+  var ah=acts.length?acts.slice().reverse().map(a=>`<div class="act-item"><div class="act-icon">${icons[a.tipo]||'·'}</div><div class="act-body"><div class="act-title">${a.descricao}</div><div class="act-meta">${a.tipo} — ${fdate(a.date)}</div></div>${sbadge(a.status)}</div>`).join(''):'<div class="empty">Nenhuma atividade registrada</div>';
+  document.getElementById('pr-hist').innerHTML=ah;
+  prevPg=curPg;
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
+  document.getElementById('pg-profile').classList.add('active');
+  curPg='profile';
+}
+function addActProfile(){
+  if(profData)document.getElementById('tc').value=profData.nome;
+  openModal('m-task');
+}
+
+// ---- SAVE FUNCTIONS ----
+async function saveCli(){
+  var n=document.getElementById('cn').value.trim();
+  if(!n){alert('Informe o nome');return;}
+  var row={user_id:currentUser.id,nome:n,email:document.getElementById('ce').value,phone:document.getElementById('cp').value,seg:document.getElementById('cs').value,pat:document.getElementById('cv').value||0,prod:document.getElementById('cpd').value,obs:document.getElementById('co').value,date:new Date().toISOString().split('T')[0]};
+  var {data,error}=await sb.from('clientes').insert(row).select().single();
+  if(error){showToast('Erro: '+error.message);return;}
+  DB.clientes.push(data);
+  closeModal(null,'m-cliente');
+  ['cn','ce','cp','cv','cpd','co'].forEach(id=>document.getElementById(id).value='');
+  renderClientes(); rdash(); showToast('✓ Cliente salvo');
+}
+
+async function saveLead(){
+  var n=document.getElementById('ln').value.trim();
+  if(!n){alert('Informe o nome');return;}
+  var row={user_id:currentUser.id,nome:n,empresa:document.getElementById('le').value,email:document.getElementById('lem').value,phone:document.getElementById('lp').value,orig:'Manual',status:document.getElementById('ls').value,pot:0,prod:document.getElementById('lpd').value,obs:document.getElementById('lob').value,date:new Date().toISOString().split('T')[0]};
+  var {data,error}=await sb.from('leads').insert(row).select().single();
+  if(error){showToast('Erro: '+error.message);return;}
+  DB.leads.push(data);
+  closeModal(null,'m-lead');
+  ['ln','le','lem','lp','lpd','lob'].forEach(id=>document.getElementById(id).value='');
+  renderLeads(); rdash(); showToast('✓ Lead salvo');
+}
+
+async function saveOpp(){
+  var n=document.getElementById('on2').value.trim();
+  if(!n){alert('Informe o nome');return;}
+  var row={user_id:currentUser.id,nome:n,cliente:document.getElementById('oc').value,val:document.getElementById('ov').value||0,estagio:document.getElementById('oe').value,prod:document.getElementById('opd').value,date:document.getElementById('od').value||null};
+  var {data,error}=await sb.from('opps').insert(row).select().single();
+  if(error){showToast('Erro: '+error.message);return;}
+  DB.opps.push(data);
+  closeModal(null,'m-opp');
+  ['on2','oc','ov','opd','od'].forEach(id=>document.getElementById(id).value='');
+  renderKanban(); renderPipeLista(); renderPipeGraf(); rdash(); showToast('✓ Oportunidade salva');
+}
+
+async function saveTask(){
+  var d=document.getElementById('td').value.trim();
+  if(!d){alert('Informe a descrição');return;}
+  var row={user_id:currentUser.id,tipo:document.getElementById('tt').value,cliente:document.getElementById('tc').value,descricao:d,date:document.getElementById('tdt').value||new Date().toISOString().split('T')[0],status:document.getElementById('tst').value};
+  var {data,error}=await sb.from('tasks').insert(row).select().single();
+  if(error){showToast('Erro: '+error.message);return;}
+  DB.tasks.push(data);
+  closeModal(null,'m-task');
+  ['td','tc','tdt'].forEach(id=>document.getElementById(id).value='');
+  renderActs(); rdash(); showToast('✓ Atividade salva');
+  if(curPg==='profile'&&profData){var acts=DB.tasks.filter(t=>t.cliente===profData.nome);var icons={Reunião:'📅',Ligação:'📞',Email:'✉',Tarefa:'✓',WhatsApp:'💬'};document.getElementById('pr-hist').innerHTML=acts.length?acts.slice().reverse().map(a=>`<div class="act-item"><div class="act-icon">${icons[a.tipo]||'·'}</div><div class="act-body"><div class="act-title">${a.descricao}</div><div class="act-meta">${a.tipo} — ${fdate(a.date)}</div></div>${sbadge(a.status)}</div>`).join(''):'<div class="empty">Nenhuma atividade</div>';}
+}
+
+async function markDone(id,btn){
+  var t=DB.tasks.find(t=>t.id===id);
+  if(!t)return;
+  var newStatus=t.status==='Realizado'?'Pendente':'Realizado';
+  var {error}=await sb.from('tasks').update({status:newStatus}).eq('id',id);
+  if(error){showToast('Erro ao atualizar');return;}
+  t.status=newStatus;
+  renderActs(); updBadge(); rdash();
+}
+
+async function importCSV(e){
+  var file=e.target.files[0]; if(!file)return;
+  var reader=new FileReader();
+  reader.onload=async function(ev){
+    var lines=ev.target.result.split('\n').filter(l=>l.trim());
+    var headers=lines[0].split(',').map(h=>h.trim().toLowerCase().replace(/['"]/g,''));
+    var rows=[];
+    var today=new Date().toISOString().split('T')[0];
+    for(var i=1;i<lines.length;i++){
+      var cols=lines[i].split(',').map(c=>c.trim().replace(/['"]/g,''));
+      var r={}; headers.forEach((h,j)=>r[h]=cols[j]||'');
+      if(r.nome)rows.push({user_id:currentUser.id,nome:r.nome,empresa:r.empresa||'',email:r.email||'',phone:r.telefone||r.phone||'',orig:r.origem||'Importação',status:r.status||'Novo',pot:r.potencial||0,prod:r.produtos||'',obs:r.observacoes||'',date:today});
+    }
+    var ok=0;
+    for(var i=0;i<rows.length;i+=50){
+      var {data,error}=await sb.from('leads').insert(rows.slice(i,i+50)).select();
+      if(!error&&data){DB.leads.push(...data);ok+=data.length;}
+    }
+    document.getElementById('import-fb').innerHTML=`<div class="badge badge-green" style="padding:8px 14px;font-size:13px">${ok} leads importados!</div>`;
+    renderLeads(); rdash();
+  };
+  reader.readAsText(file);
+}
+</script>
+</body>
+</html>
